@@ -1,0 +1,144 @@
+body { background: #000; font-family: Arial; margin: 0; color: #fff; }
+
+.app-root {
+  max-width: 900px;
+  margin: 0;
+  padding: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+main { width: 100%; }
+
+.app-root {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.app-root::-webkit-scrollbar { display: none; }
+
+header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Profile avatar circle */
+.profile-area {
+  position: relative;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #646cff, #fc4646);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.2s;
+}
+.avatar:hover { opacity: 0.85; }
+
+/* Dropdown menu */
+.profile-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 0.75rem;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.profile-email {
+  font-size: 0.8rem;
+  color: #aaa;
+  word-break: break-all;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #333;
+}
+
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65);
+  display: flex; justify-content: center; align-items: center;
+}
+
+.modal {
+  background: #111; padding: 1rem; border-radius: 8px;
+  width: 90%; max-width: 700px;
+  position: relative;
+}
+
+.close-btn {
+  position: absolute; top: 8px; right: 8px;
+  background: transparent; border: none; font-size: 1.2rem; color: #fff;
+}
+
+.games-list {
+  display: flex; gap: 0.5rem; overflow-x: auto; padding: 0.5rem 0;
+}
+
+.games-list button {
+  border: 1px solid #333; background: #1a1a1a;
+  padding: 0.3rem; display: flex; align-items: center; gap: 0.5rem;
+}
+
+.games-list img {
+  width: 48px; height: 48px; object-fit: cover;
+}
+
+.selected-game-preview img {
+  width: 300px; display: block; margin: 0.5rem auto;
+}
+
+.feed-controls { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+
+.post-card {
+  background: #1a1a1a; padding: 1rem; border-radius: 6px;
+  margin-bottom: 0.6rem; cursor: pointer;
+}
+.post-meta { color: #ccc; font-size: 0.8rem; }
+.upvotes { margin-top: 0.3rem; }
+
+.post-page img.game-art {
+  width: 100%; max-width: 600px; margin: 1rem auto; display: block;
+}
+
+.global-loading {
+  display: flex; gap: 0.8rem; justify-content: center; padding: 1.5rem;
+}
+.global-loading .dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: #646cff;
+  animation: ld 1s infinite ease-in-out;
+}
+.global-loading .dot:nth-child(2) { animation-delay: 0.12s }
+.global-loading .dot:nth-child(3) { animation-delay: 0.24s }
+
+@keyframes ld {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
