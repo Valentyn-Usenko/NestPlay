@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 
-export default function PostPage({ postId, onBack }) {
+export default function PostPage({ postId, session, onBack }) {
   const [post, setPost] = useState(null)
   const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(true)
   const [commentText, setCommentText] = useState('')
-  const [secretInput, setSecretInput] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [hasUpvoted, setHasUpvoted] = useState(false)
   const [hasDownvoted, setHasDownvoted] = useState(false)
@@ -29,13 +28,12 @@ export default function PostPage({ postId, onBack }) {
 
     setPost(p)
     setComments(c || [])
-    
-    // Check if user has already upvoted or downvoted
+
     const upvotedPosts = JSON.parse(localStorage.getItem('upvotedPosts') || '[]')
     const downvotedPosts = JSON.parse(localStorage.getItem('downvotedPosts') || '[]')
     setHasUpvoted(upvotedPosts.includes(postId))
     setHasDownvoted(downvotedPosts.includes(postId))
-    
+
     setLoading(false)
   }
 
@@ -45,47 +43,29 @@ export default function PostPage({ postId, onBack }) {
 
   const addComment = async () => {
     if (!commentText) return
-    await supabase
-      .from('comments')
-      .insert([{ post_id: postId, name: 'Anon', content: commentText }])
-
+    const commentName = session?.user?.user_metadata?.username || session?.user?.email || 'Anon'
+    await supabase.from('comments').insert([{ post_id: postId, name: commentName, content: commentText }])
     setCommentText('')
     fetchData()
   }
 
   const upvote = async () => {
-    const { data: p } = await supabase
-      .from('posts')
-      .select('upvotes')
-      .eq('id', postId)
-      .single()
-
+    const { data: p } = await supabase.from('posts').select('upvotes').eq('id', postId).single()
     const upvotedPosts = JSON.parse(localStorage.getItem('upvotedPosts') || '[]')
     const downvotedPosts = JSON.parse(localStorage.getItem('downvotedPosts') || '[]')
 
     if (hasUpvoted) {
-      // Remove upvote
       upvotedPosts.splice(upvotedPosts.indexOf(postId), 1)
-      await supabase
-        .from('posts')
-        .update({ upvotes: (p.upvotes || 1) - 1 })
-        .eq('id', postId)
+      await supabase.from('posts').update({ upvotes: (p.upvotes || 1) - 1 }).eq('id', postId)
       setHasUpvoted(false)
     } else {
-      // Add upvote and remove downvote if exists
       if (hasDownvoted) {
         downvotedPosts.splice(downvotedPosts.indexOf(postId), 1)
-        await supabase
-          .from('posts')
-          .update({ downvotes: (p.downvotes || 1) - 1 })
-          .eq('id', postId)
+        await supabase.from('posts').update({ downvotes: (p.downvotes || 1) - 1 }).eq('id', postId)
         setHasDownvoted(false)
       }
       upvotedPosts.push(postId)
-      await supabase
-        .from('posts')
-        .update({ upvotes: (p.upvotes || 0) + 1 })
-        .eq('id', postId)
+      await supabase.from('posts').update({ upvotes: (p.upvotes || 0) + 1 }).eq('id', postId)
       setHasUpvoted(true)
     }
 
@@ -95,38 +75,22 @@ export default function PostPage({ postId, onBack }) {
   }
 
   const downvote = async () => {
-    const { data: p } = await supabase
-      .from('posts')
-      .select('downvotes, upvotes')
-      .eq('id', postId)
-      .single()
-
+    const { data: p } = await supabase.from('posts').select('downvotes, upvotes').eq('id', postId).single()
     const upvotedPosts = JSON.parse(localStorage.getItem('upvotedPosts') || '[]')
     const downvotedPosts = JSON.parse(localStorage.getItem('downvotedPosts') || '[]')
 
     if (hasDownvoted) {
-      // Remove downvote
       downvotedPosts.splice(downvotedPosts.indexOf(postId), 1)
-      await supabase
-        .from('posts')
-        .update({ downvotes: (p.downvotes || 1) - 1 })
-        .eq('id', postId)
+      await supabase.from('posts').update({ downvotes: (p.downvotes || 1) - 1 }).eq('id', postId)
       setHasDownvoted(false)
     } else {
-      // Add downvote and remove upvote if exists
       if (hasUpvoted) {
         upvotedPosts.splice(upvotedPosts.indexOf(postId), 1)
-        await supabase
-          .from('posts')
-          .update({ upvotes: (p.upvotes || 1) - 1 })
-          .eq('id', postId)
+        await supabase.from('posts').update({ upvotes: (p.upvotes || 1) - 1 }).eq('id', postId)
         setHasUpvoted(false)
       }
       downvotedPosts.push(postId)
-      await supabase
-        .from('posts')
-        .update({ downvotes: (p.downvotes || 0) + 1 })
-        .eq('id', postId)
+      await supabase.from('posts').update({ downvotes: (p.downvotes || 0) + 1 }).eq('id', postId)
       setHasDownvoted(true)
     }
 
@@ -136,20 +100,6 @@ export default function PostPage({ postId, onBack }) {
   }
 
   const handleDelete = async () => {
-    if (post.password && !secretInput) return alert('Enter password')
-
-    async function hashSecret(secret) {
-      const enc = new TextEncoder()
-      const data = enc.encode(secret)
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-      return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('')
-    }
-
-    if (post.password) {
-      const hashed = await hashSecret(secretInput)
-      if (hashed !== post.password) return alert('Wrong password')
-    }
-
     await supabase.from('posts').delete().eq('id', postId)
     onBack()
   }
@@ -169,6 +119,8 @@ export default function PostPage({ postId, onBack }) {
 
   if (!post) return <div>Post not found.</div>
 
+  const isOwner = session?.user?.id === post.user_id
+
   return (
     <div className="post-page">
       <button onClick={onBack}>← Back</button>
@@ -183,21 +135,34 @@ export default function PostPage({ postId, onBack }) {
 
       <p>{post.content}</p>
 
-      <button onClick={upvote} style={{ backgroundColor: hasUpvoted ? '#4CAF50' : '' }}>Upvote ({post.upvotes || 0})</button>
-      <button onClick={downvote} style={{ backgroundColor: hasDownvoted ? '#f44336' : '' }}>Downvote ({post.downvotes || 0})</button>
+      <button onClick={upvote} style={{ backgroundColor: hasUpvoted ? '#4CAF50' : '' }}>
+        Upvote ({post.upvotes || 0})
+      </button>
+      <button onClick={downvote} style={{ backgroundColor: hasDownvoted ? '#f44336' : '' }}>
+        Downvote ({post.downvotes || 0})
+      </button>
 
       <div className="comments">
         <h3>Comments</h3>
-
         {comments.map(c => (
-          <div key={c.id} className="comment" style={{ cursor: 'pointer', position: 'relative' }} onClick={() => setSelectedCommentId(selectedCommentId === c.id ? null : c.id)}>
+          <div
+            key={c.id}
+            className="comment"
+            style={{ cursor: 'pointer', position: 'relative' }}
+            onClick={() => setSelectedCommentId(selectedCommentId === c.id ? null : c.id)}
+          >
             <div className="c-meta">
               {c.name} • {new Date(c.created_at).toLocaleString()}
             </div>
             <div>{c.content}</div>
             {selectedCommentId === c.id && (
               <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#333', borderRadius: '4px' }}>
-                <button onClick={(e) => { e.stopPropagation(); deleteComment(c.id); }} style={{ color: '#f44336', background: 'none', border: 'none', cursor: 'pointer' }}>Delete comment</button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); deleteComment(c.id) }}
+                  style={{ color: '#f44336', background: 'none', border: 'none', cursor: 'pointer' }}
+                >
+                  Delete comment
+                </button>
               </div>
             )}
           </div>
@@ -214,26 +179,21 @@ export default function PostPage({ postId, onBack }) {
         </div>
       </div>
 
-      <div className="danger-zone">
-        <h4>Delete post</h4>
-        {post.password && (
-          <input
-            type="password"
-            placeholder="Enter password"
-            value={secretInput}
-            onChange={e => setSecretInput(e.target.value)}
-          />
-        )}
-        <label>
-          <input
-            type="checkbox"
-            checked={confirmDelete}
-            onChange={e => setConfirmDelete(e.target.checked)}
-          />
-          I confirm I want to delete this post
-        </label>
-        <button onClick={handleDelete} disabled={!confirmDelete || (post.password && !secretInput)}>Delete</button>
-      </div>
+      {/* Only the post owner sees the delete section */}
+      {isOwner && (
+        <div className="danger-zone">
+          <h4>Delete post</h4>
+          <label>
+            <input
+              type="checkbox"
+              checked={confirmDelete}
+              onChange={e => setConfirmDelete(e.target.checked)}
+            />
+            I confirm I want to delete this post
+          </label>
+          <button onClick={handleDelete} disabled={!confirmDelete}>Delete</button>
+        </div>
+      )}
     </div>
   )
 }

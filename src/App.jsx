@@ -3,80 +3,83 @@ import { supabase } from './supabaseClient'
 import PostList from './components/PostList'
 import PostModal from './components/PostModal'
 import PostPage from './components/PostPage'
-import AuthModal from './components/AuthModal' 
+import ProfilePage from './components/ProfilePage'
+import AuthModal from './components/AuthModal'
 import './App.css'
 
 export default function App() {
   const [showModal, setShowModal] = useState(false)
   const [activePost, setActivePost] = useState(null)
-  
-  // New state for Authentication
+  const [activePage, setActivePage] = useState('feed') // 'feed' | 'profile'
   const [session, setSession] = useState(null)
-  const [authMode, setAuthMode] = useState(null) // 'login', 'signup', or null
+  const [authMode, setAuthMode] = useState(null)
 
   useEffect(() => {
-    // 1. Check active session on load
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-    })
-
-    // 2. Listen for login/logout events
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
-
+    supabase.auth.getSession().then(({ data: { session } }) => setSession(session))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session))
     return () => subscription.unsubscribe()
   }, [])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
+    setActivePage('feed')
+    setActivePost(null)
+  }
+
+  const goHome = () => {
+    setActivePage('feed')
+    setActivePost(null)
   }
 
   return (
-    <div className="app-root">
+    <>
       <header>
-        <h1>GameSocial</h1>
-        
-        {/* Auth Buttons */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+        <h1 style={{ cursor: 'pointer' }} onClick={goHome}>GameSocial</h1>
+        <div className="header-right">
           {!session ? (
             <>
-              <button onClick={() => setAuthMode('signup')}>Sign Up</button>
-              <button onClick={() => setAuthMode('login')}>Login</button>
+              <button className="btn-ghost" onClick={() => setAuthMode('login')}>Login</button>
+              <button className="btn-primary" onClick={() => setAuthMode('signup')}>Sign Up</button>
             </>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '0.8rem' }}>{session.user.email}</span>
-              <button onClick={handleLogout}>Logout</button>
-            </div>
+            <>
+              <button className="btn-primary" onClick={() => setShowModal(true)}>Create Post</button>
+              <button className="btn-ghost" onClick={handleLogout}>Logout</button>
+              <span
+                className="username-link"
+                onClick={() => { setActivePage('profile'); setActivePost(null) }}
+              >
+                {session.user.user_metadata?.username || session.user.email}
+              </span>
+            </>
           )}
         </div>
-
-        <button onClick={() => setShowModal(true)}>Create Post</button>
       </header>
 
-      <main>
-        {!activePost && <PostList onOpenPost={(p) => setActivePost(p)} />}
-        {activePost && <PostPage postId={activePost.id} onBack={() => setActivePost(null)} />}
-      </main>
+      <div className="app-root">
+        <main>
+          {activePage === 'profile' && session && (
+            <ProfilePage session={session} onBack={goHome} />
+          )}
+          {activePage === 'feed' && !activePost && (
+            <PostList onOpenPost={(p) => setActivePost(p)} />
+          )}
+          {activePage === 'feed' && activePost && (
+            <PostPage postId={activePost.id} session={session} onBack={() => setActivePost(null)} />
+          )}
+        </main>
+      </div>
 
-      {/* Post Creation Modal */}
       {showModal && (
-        <PostModal 
-          onClose={() => setShowModal(false)} 
-          onCreated={(p) => { setShowModal(false); setActivePost(p); }} 
+        <PostModal
+          session={session}
+          onClose={() => setShowModal(false)}
+          onCreated={(p) => { setShowModal(false); setActivePost(p); setActivePage('feed') }}
         />
       )}
-
-      {/* Auth Modal (Login/Signup) */}
       {authMode && (
-        <AuthModal 
-          mode={authMode} 
-          onClose={() => setAuthMode(null)} 
-        />
+        <AuthModal mode={authMode} onClose={() => setAuthMode(null)} />
       )}
-    </div>
+    </>
   )
 }
