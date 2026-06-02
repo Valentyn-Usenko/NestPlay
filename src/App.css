@@ -53,11 +53,10 @@ header h1 {
 }
 .btn-ghost:hover { border-color: #646cff; color: #fff; }
 
-
 .app-root {
   max-width: 900px;
   margin: 0 auto;
-  padding: 5rem 1rem 1rem 1rem; /* top padding clears the fixed header */
+  padding: 5rem 1rem 1rem 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -195,12 +194,6 @@ main { width: 100%; }
   border-color: #646cff;
 }
 
-.username-link:hover {
-    text-decoration: underline;
-    text-decoration-color: #ffffff;
-
-}
-
 .post-meta { color: #ccc; font-size: 0.8rem; }
 .upvotes { margin-top: 0.3rem; }
 
@@ -222,4 +215,200 @@ main { width: 100%; }
 @keyframes ld {
   0%, 80%, 100% { transform: scale(0); }
   40% { transform: scale(1); }
+}
+
+.username-link {
+  cursor: pointer;
+  color: #fff;
+  font-weight: 600;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  display: inline-block;
+  user-select: none;
+}
+
+.username-link:hover {
+  background: #1e1e1e;
+  border-color: #444;
+  transform: scale(1.06) translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.username-link:active {
+  transform: scale(0.97) translateY(0px);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Profile Page ── */
+.profile-page {
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
+  padding-bottom: 3rem;
+}
+
+.profile-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  background: linear-gradient(135deg, #111 0%, #1a1a2e 100%);
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 1.25rem;
+}
+
+.profile-avatar-large {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #646cff, #fc4646);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 0 24px rgba(100, 108, 255, 0.35);
+}
+
+.profile-hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.profile-username {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.profile-email-text {
+  margin: 0;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.profile-joined {
+  margin: 0;
+  color: #555;
+  font-size: 0.78rem;
+  margin-top: 0.2rem;
+}
+
+.profile-stats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  flex: 1;
+  background: #111;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.stat-card:hover {
+  border-color: #646cff;
+  transform: translateY(-2px);
+}
+
+.stat-number {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #646cff;
+}
+
+.stat-label {
+  font-size: 0.78rem;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.profile-posts-section {
+  background: #0d0d0d;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.profile-posts-heading {
+  margin: 0 0 1.25rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.profile-post-card {
+  cursor: default;
+}
+
+.profile-post-card:hover {
+  border-color: #333;
+}
+
+.profile-post-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.profile-post-title {
+  margin: 0 0 0.3rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.profile-post-upvotes {
+  color: #4CAF50;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.profile-post-game {
+  color: #888;
+  font-size: 0.8rem;
+  margin-bottom: 0.3rem;
+}
+
+.profile-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  color: #555;
+}
+
+.profile-back-btn {
+  background: transparent;
+  border: 1px solid #333;
+  color: #aaa;
+  padding: 0.6rem 1.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.profile-back-btn:hover {
+  border-color: #646cff;
+  color: #fff;
 }

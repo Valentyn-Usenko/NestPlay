@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
+import AuthModal from './AuthModal'
 
 export default function PostPage({ postId, session, onBack }) {
   const [post, setPost] = useState(null)
@@ -10,6 +11,10 @@ export default function PostPage({ postId, session, onBack }) {
   const [hasUpvoted, setHasUpvoted] = useState(false)
   const [hasDownvoted, setHasDownvoted] = useState(false)
   const [selectedCommentId, setSelectedCommentId] = useState(null)
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false)
+  const [authMode, setAuthMode] = useState(null)
+
+  const uid = session?.user?.id
 
   const fetchData = async () => {
     setLoading(true)
@@ -29,19 +34,32 @@ export default function PostPage({ postId, session, onBack }) {
     setPost(p)
     setComments(c || [])
 
-    const upvotedPosts = JSON.parse(localStorage.getItem('upvotedPosts') || '[]')
-    const downvotedPosts = JSON.parse(localStorage.getItem('downvotedPosts') || '[]')
-    setHasUpvoted(upvotedPosts.includes(postId))
-    setHasDownvoted(downvotedPosts.includes(postId))
+    if (uid) {
+      const { data: existing } = await supabase
+        .from('votes')
+        .select('vote_type')
+        .eq('user_id', uid)
+        .eq('post_id', postId)
+        .limit(1)
+
+      const vote = existing?.[0] ?? null
+      setHasUpvoted(vote?.vote_type === 'up')
+      setHasDownvoted(vote?.vote_type === 'down')
+    } else {
+      setHasUpvoted(false)
+      setHasDownvoted(false)
+    }
 
     setLoading(false)
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     Promise.resolve().then(fetchData)
   }, [postId])
 
   const addComment = async () => {
+    if (!session) { setShowAuthPrompt(true); return }
     if (!commentText) return
     const commentName = session?.user?.user_metadata?.username || session?.user?.email || 'Anon'
     await supabase.from('comments').insert([{ post_id: postId, name: commentName, content: commentText }])
@@ -50,56 +68,61 @@ export default function PostPage({ postId, session, onBack }) {
   }
 
   const upvote = async () => {
-    const { data: p } = await supabase.from('posts').select('upvotes').eq('id', postId).single()
-    const upvotedPosts = JSON.parse(localStorage.getItem('upvotedPosts') || '[]')
-    const downvotedPosts = JSON.parse(localStorage.getItem('downvotedPosts') || '[]')
+    if (!session) { setShowAuthPrompt(true); return }
 
-    if (hasUpvoted) {
-      upvotedPosts.splice(upvotedPosts.indexOf(postId), 1)
+    const { data: existing } = await supabase
+      .from('votes')
+      .select('vote_type')
+      .eq('user_id', uid)
+      .eq('post_id', postId)
+      .limit(1)
+
+    const vote = existing?.[0] ?? null
+    const { data: p } = await supabase.from('posts').select('upvotes, downvotes').eq('id', postId).single()
+
+    if (vote?.vote_type === 'up') {
+      await supabase.from('votes').delete().eq('user_id', uid).eq('post_id', postId)
       await supabase.from('posts').update({ upvotes: (p.upvotes || 1) - 1 }).eq('id', postId)
-      setHasUpvoted(false)
+    } else if (vote?.vote_type === 'down') {
+      await supabase.from('votes').update({ vote_type: 'up' }).eq('user_id', uid).eq('post_id', postId)
+      await supabase.from('posts').update({ upvotes: (p.upvotes || 0) + 1, downvotes: (p.downvotes || 1) - 1 }).eq('id', postId)
     } else {
-      if (hasDownvoted) {
-        downvotedPosts.splice(downvotedPosts.indexOf(postId), 1)
-        await supabase.from('posts').update({ downvotes: (p.downvotes || 1) - 1 }).eq('id', postId)
-        setHasDownvoted(false)
-      }
-      upvotedPosts.push(postId)
+      await supabase.from('votes').insert({ user_id: uid, post_id: postId, vote_type: 'up' })
       await supabase.from('posts').update({ upvotes: (p.upvotes || 0) + 1 }).eq('id', postId)
-      setHasUpvoted(true)
     }
 
-    localStorage.setItem('upvotedPosts', JSON.stringify(upvotedPosts))
-    localStorage.setItem('downvotedPosts', JSON.stringify(downvotedPosts))
     fetchData()
   }
 
   const downvote = async () => {
-    const { data: p } = await supabase.from('posts').select('downvotes, upvotes').eq('id', postId).single()
-    const upvotedPosts = JSON.parse(localStorage.getItem('upvotedPosts') || '[]')
-    const downvotedPosts = JSON.parse(localStorage.getItem('downvotedPosts') || '[]')
+    if (!session) { setShowAuthPrompt(true); return }
 
-    if (hasDownvoted) {
-      downvotedPosts.splice(downvotedPosts.indexOf(postId), 1)
+    const { data: existing } = await supabase
+      .from('votes')
+      .select('vote_type')
+      .eq('user_id', uid)
+      .eq('post_id', postId)
+      .limit(1)
+
+    const vote = existing?.[0] ?? null
+    const { data: p } = await supabase.from('posts').select('upvotes, downvotes').eq('id', postId).single()
+
+    if (vote?.vote_type === 'down') {
+      await supabase.from('votes').delete().eq('user_id', uid).eq('post_id', postId)
       await supabase.from('posts').update({ downvotes: (p.downvotes || 1) - 1 }).eq('id', postId)
-      setHasDownvoted(false)
+    } else if (vote?.vote_type === 'up') {
+      await supabase.from('votes').update({ vote_type: 'down' }).eq('user_id', uid).eq('post_id', postId)
+      await supabase.from('posts').update({ downvotes: (p.downvotes || 0) + 1, upvotes: (p.upvotes || 1) - 1 }).eq('id', postId)
     } else {
-      if (hasUpvoted) {
-        upvotedPosts.splice(upvotedPosts.indexOf(postId), 1)
-        await supabase.from('posts').update({ upvotes: (p.upvotes || 1) - 1 }).eq('id', postId)
-        setHasUpvoted(false)
-      }
-      downvotedPosts.push(postId)
+      await supabase.from('votes').insert({ user_id: uid, post_id: postId, vote_type: 'down' })
       await supabase.from('posts').update({ downvotes: (p.downvotes || 0) + 1 }).eq('id', postId)
-      setHasDownvoted(true)
     }
 
-    localStorage.setItem('upvotedPosts', JSON.stringify(upvotedPosts))
-    localStorage.setItem('downvotedPosts', JSON.stringify(downvotedPosts))
     fetchData()
   }
 
   const handleDelete = async () => {
+    await supabase.from('votes').delete().eq('post_id', postId)
     await supabase.from('posts').delete().eq('id', postId)
     onBack()
   }
@@ -170,16 +193,17 @@ export default function PostPage({ postId, session, onBack }) {
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
           <textarea
-            placeholder="Write a comment"
+            placeholder={session ? 'Write a comment' : 'Log in to comment...'}
             value={commentText}
             onChange={e => setCommentText(e.target.value)}
-            style={{ flex: 1 }}
+            style={{ flex: 1, opacity: session ? 1 : 0.5, cursor: session ? 'text' : 'not-allowed' }}
+            readOnly={!session}
+            onClick={() => { if (!session) setShowAuthPrompt(true) }}
           />
           <button onClick={addComment}>Add comment</button>
         </div>
       </div>
 
-      {/* Only the post owner sees the delete section */}
       {isOwner && (
         <div className="danger-zone">
           <h4>Delete post</h4>
@@ -193,6 +217,39 @@ export default function PostPage({ postId, session, onBack }) {
           </label>
           <button onClick={handleDelete} disabled={!confirmDelete}>Delete</button>
         </div>
+      )}
+
+      {showAuthPrompt && (
+        <div className="modal-overlay">
+          <div className="modal" style={{ maxWidth: '420px', textAlign: 'center' }}>
+            <button className="close-btn" onClick={() => setShowAuthPrompt(false)}>×</button>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🎮</div>
+            <h2 style={{ marginTop: 0, marginBottom: '0.5rem' }}>Join the Conversation</h2>
+            <p style={{ color: '#aaa', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+              Create a free account to upvote, downvote, comment, and share your take on games with the community.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <button
+                className="btn-primary"
+                style={{ padding: '0.85rem', fontSize: '1rem', width: '100%' }}
+                onClick={() => { setShowAuthPrompt(false); setAuthMode('signup') }}
+              >
+                Create Free Account
+              </button>
+              <button
+                className="btn-ghost"
+                style={{ padding: '0.75rem', width: '100%' }}
+                onClick={() => { setShowAuthPrompt(false); setAuthMode('login') }}
+              >
+                Already have an account? Log in
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {authMode && (
+        <AuthModal mode={authMode} onClose={() => setAuthMode(null)} />
       )}
     </div>
   )
