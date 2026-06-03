@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 
-export default function PostList({ onOpenPost }) {
+export default function PostList({ onOpenPost, onOpenProfile }) {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState('created_at')
@@ -12,34 +12,46 @@ export default function PostList({ onOpenPost }) {
 
     let query = supabase.from('posts').select('*')
     if (search) query = query.ilike('title', `%${search}%`)
-    if (sortBy === 'upvotes') query = query.order('upvotes', { ascending: false })
-    else query = query.order('created_at', { ascending: false })
+    query = query.order('created_at', { ascending: false })
 
-    const { data } = await query
-    setPosts(data || [])
+    const { data: postsData } = await query
+
+    if (!postsData || postsData.length === 0) {
+      setPosts([])
+      setLoading(false)
+      return
+    }
+
+    const postIds = postsData.map(p => p.id)
+    const { data: votesData } = await supabase
+      .from('votes')
+      .select('post_id, vote_type')
+      .in('post_id', postIds)
+      .eq('vote_type', 'up')
+
+    const upvoteMap = {}
+    for (const v of (votesData || [])) {
+      upvoteMap[v.post_id] = (upvoteMap[v.post_id] || 0) + 1
+    }
+
+    let enriched = postsData.map(p => ({ ...p, liveUpvotes: upvoteMap[p.id] || 0 }))
+    if (sortBy === 'upvotes') enriched = enriched.sort((a, b) => b.liveUpvotes - a.liveUpvotes)
+
+    setPosts(enriched)
     setLoading(false)
   }
 
   useEffect(() => {
-  Promise.resolve().then(() => fetchPosts());
-
-  const sub = supabase
-    .channel('public:posts')
-    .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'posts' }, 
-        fetchPosts)
-    .subscribe();
-
-  return () => supabase.removeChannel(sub);
-}, [sortBy]);
-
+    Promise.resolve().then(() => fetchPosts())
+    const sub = supabase
+      .channel('public:posts')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, fetchPosts)
+      .subscribe()
+    return () => supabase.removeChannel(sub)
+  }, [sortBy])
 
   if (loading)
-    return (
-      <div className="global-loading">
-        <div className="dot" /><div className="dot" /><div className="dot" />
-      </div>
-    )
+    return <div className="global-loading"><div className="dot" /><div className="dot" /><div className="dot" /></div>
 
   if (!posts.length)
     return <div className="empty-state">No posts yet — create one!</div>
@@ -58,9 +70,17 @@ export default function PostList({ onOpenPost }) {
       <ul className="posts">
         {posts.map(p => (
           <li key={p.id} className="post-card" onClick={() => onOpenPost(p)}>
-            <div className="post-meta">{new Date(p.created_at).toLocaleString()}</div>
+            <div className="post-meta">
+              <span
+                className="author-link"
+                onClick={e => { e.stopPropagation(); onOpenProfile(p.user_id) }}
+              >
+                {p.name}
+              </span>
+              {' '}• {new Date(p.created_at).toLocaleString()}
+            </div>
             <h3>{p.title}</h3>
-            <div className="upvotes">▲ {p.upvotes}</div>
+            <div className="upvotes">▲ {p.liveUpvotes}</div>
           </li>
         ))}
       </ul>

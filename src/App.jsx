@@ -4,13 +4,15 @@ import PostList from './components/PostList'
 import PostModal from './components/PostModal'
 import PostPage from './components/PostPage'
 import ProfilePage from './components/ProfilePage'
+import PublicProfilePage from './components/PublicProfilePage'
 import AuthModal from './components/AuthModal'
 import './App.css'
 
 export default function App() {
   const [showModal, setShowModal] = useState(false)
   const [activePost, setActivePost] = useState(null)
-  const [activePage, setActivePage] = useState('feed') // 'feed' | 'profile'
+  const [activePage, setActivePage] = useState('feed') // 'feed' | 'profile' | 'publicProfile'
+  const [activeUserId, setActiveUserId] = useState(null)
   const [session, setSession] = useState(null)
   const [authMode, setAuthMode] = useState(null)
 
@@ -24,10 +26,22 @@ export default function App() {
     await supabase.auth.signOut()
     setActivePage('feed')
     setActivePost(null)
+    setActiveUserId(null)
   }
 
   const goHome = () => {
     setActivePage('feed')
+    setActivePost(null)
+    setActiveUserId(null)
+  }
+
+  const openUserProfile = (userId) => {
+    if (session && userId === session.user.id) {
+      setActivePage('profile')
+    } else {
+      setActiveUserId(userId)
+      setActivePage('publicProfile')
+    }
     setActivePost(null)
   }
 
@@ -61,11 +75,14 @@ export default function App() {
           {activePage === 'profile' && session && (
             <ProfilePage session={session} onBack={goHome} />
           )}
+          {activePage === 'publicProfile' && activeUserId && (
+            <PublicProfilePage userId={activeUserId} onBack={goHome} onOpenPost={(p) => { setActivePost(p); setActivePage('feed') }} />
+          )}
           {activePage === 'feed' && !activePost && (
-            <PostList onOpenPost={(p) => setActivePost(p)} />
+            <PostList onOpenPost={(p) => setActivePost(p)} onOpenProfile={openUserProfile} />
           )}
           {activePage === 'feed' && activePost && (
-            <PostPage postId={activePost.id} session={session} onBack={() => setActivePost(null)} />
+            <PostPage postId={activePost.id} session={session} onBack={() => setActivePost(null)} onOpenProfile={openUserProfile} />
           )}
         </main>
       </div>

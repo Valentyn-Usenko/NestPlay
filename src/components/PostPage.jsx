@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import AuthModal from './AuthModal'
 
-export default function PostPage({ postId, session, onBack }) {
+export default function PostPage({ postId, session, onBack, onOpenProfile }) {
   const [post, setPost] = useState(null)
   const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -10,6 +10,8 @@ export default function PostPage({ postId, session, onBack }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [hasUpvoted, setHasUpvoted] = useState(false)
   const [hasDownvoted, setHasDownvoted] = useState(false)
+  const [upvoteCount, setUpvoteCount] = useState(0)
+  const [downvoteCount, setDownvoteCount] = useState(0)
   const [selectedCommentId, setSelectedCommentId] = useState(null)
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
   const [authMode, setAuthMode] = useState(null)
@@ -19,37 +21,21 @@ export default function PostPage({ postId, session, onBack }) {
   const fetchData = async () => {
     setLoading(true)
 
-    const { data: p } = await supabase
-      .from('posts')
-      .select('*')
-      .eq('id', postId)
-      .single()
+    const { data: p } = await supabase.from('posts').select('*').eq('id', postId).single()
+    const { data: c } = await supabase.from('comments').select('*').eq('post_id', postId).order('created_at', { ascending: true })
 
-    const { data: c } = await supabase
-      .from('comments')
-      .select('*')
-      .eq('post_id', postId)
-      .order('created_at', { ascending: true })
+    const { data: allVotes } = await supabase.from('votes').select('vote_type, user_id').eq('post_id', postId)
+
+    const ups = (allVotes || []).filter(v => v.vote_type === 'up').length
+    const downs = (allVotes || []).filter(v => v.vote_type === 'down').length
+    const myVote = uid ? (allVotes || []).find(v => v.user_id === uid) : null
 
     setPost(p)
     setComments(c || [])
-
-    if (uid) {
-      const { data: existing } = await supabase
-        .from('votes')
-        .select('vote_type')
-        .eq('user_id', uid)
-        .eq('post_id', postId)
-        .limit(1)
-
-      const vote = existing?.[0] ?? null
-      setHasUpvoted(vote?.vote_type === 'up')
-      setHasDownvoted(vote?.vote_type === 'down')
-    } else {
-      setHasUpvoted(false)
-      setHasDownvoted(false)
-    }
-
+    setUpvoteCount(ups)
+    setDownvoteCount(downs)
+    setHasUpvoted(myVote?.vote_type === 'up')
+    setHasDownvoted(myVote?.vote_type === 'down')
     setLoading(false)
   }
 
@@ -69,55 +55,29 @@ export default function PostPage({ postId, session, onBack }) {
 
   const upvote = async () => {
     if (!session) { setShowAuthPrompt(true); return }
-
-    const { data: existing } = await supabase
-      .from('votes')
-      .select('vote_type')
-      .eq('user_id', uid)
-      .eq('post_id', postId)
-      .limit(1)
-
+    const { data: existing } = await supabase.from('votes').select('vote_type').eq('user_id', uid).eq('post_id', postId).limit(1)
     const vote = existing?.[0] ?? null
-    const { data: p } = await supabase.from('posts').select('upvotes, downvotes').eq('id', postId).single()
-
     if (vote?.vote_type === 'up') {
       await supabase.from('votes').delete().eq('user_id', uid).eq('post_id', postId)
-      await supabase.from('posts').update({ upvotes: (p.upvotes || 1) - 1 }).eq('id', postId)
     } else if (vote?.vote_type === 'down') {
       await supabase.from('votes').update({ vote_type: 'up' }).eq('user_id', uid).eq('post_id', postId)
-      await supabase.from('posts').update({ upvotes: (p.upvotes || 0) + 1, downvotes: (p.downvotes || 1) - 1 }).eq('id', postId)
     } else {
       await supabase.from('votes').insert({ user_id: uid, post_id: postId, vote_type: 'up' })
-      await supabase.from('posts').update({ upvotes: (p.upvotes || 0) + 1 }).eq('id', postId)
     }
-
     fetchData()
   }
 
   const downvote = async () => {
     if (!session) { setShowAuthPrompt(true); return }
-
-    const { data: existing } = await supabase
-      .from('votes')
-      .select('vote_type')
-      .eq('user_id', uid)
-      .eq('post_id', postId)
-      .limit(1)
-
+    const { data: existing } = await supabase.from('votes').select('vote_type').eq('user_id', uid).eq('post_id', postId).limit(1)
     const vote = existing?.[0] ?? null
-    const { data: p } = await supabase.from('posts').select('upvotes, downvotes').eq('id', postId).single()
-
     if (vote?.vote_type === 'down') {
       await supabase.from('votes').delete().eq('user_id', uid).eq('post_id', postId)
-      await supabase.from('posts').update({ downvotes: (p.downvotes || 1) - 1 }).eq('id', postId)
     } else if (vote?.vote_type === 'up') {
       await supabase.from('votes').update({ vote_type: 'down' }).eq('user_id', uid).eq('post_id', postId)
-      await supabase.from('posts').update({ downvotes: (p.downvotes || 0) + 1, upvotes: (p.upvotes || 1) - 1 }).eq('id', postId)
     } else {
       await supabase.from('votes').insert({ user_id: uid, post_id: postId, vote_type: 'down' })
-      await supabase.from('posts').update({ downvotes: (p.downvotes || 0) + 1 }).eq('id', postId)
     }
-
     fetchData()
   }
 
@@ -134,11 +94,7 @@ export default function PostPage({ postId, session, onBack }) {
   }
 
   if (loading)
-    return (
-      <div className="global-loading">
-        <div className="dot" /><div className="dot" /><div className="dot" />
-      </div>
-    )
+    return <div className="global-loading"><div className="dot" /><div className="dot" /><div className="dot" /></div>
 
   if (!post) return <div>Post not found.</div>
 
@@ -149,20 +105,24 @@ export default function PostPage({ postId, session, onBack }) {
       <button onClick={onBack}>← Back</button>
       <h2>{post.title}</h2>
       <div className="meta">
-        By {post.name} • {new Date(post.created_at).toLocaleString()}
+        By{' '}
+        <span
+          className="author-link"
+          onClick={() => onOpenProfile(post.user_id)}
+        >
+          {post.name}
+        </span>
+        {' '}• {new Date(post.created_at).toLocaleString()}
       </div>
 
-      {post.game_art_url && (
-        <img className="game-art" src={post.game_art_url} alt="art" />
-      )}
-
+      {post.game_art_url && <img className="game-art" src={post.game_art_url} alt="art" />}
       <p>{post.content}</p>
 
       <button onClick={upvote} style={{ backgroundColor: hasUpvoted ? '#4CAF50' : '' }}>
-        Upvote ({post.upvotes || 0})
+        Upvote ({upvoteCount})
       </button>
       <button onClick={downvote} style={{ backgroundColor: hasDownvoted ? '#f44336' : '' }}>
-        Downvote ({post.downvotes || 0})
+        Downvote ({downvoteCount})
       </button>
 
       <div className="comments">
@@ -174,9 +134,7 @@ export default function PostPage({ postId, session, onBack }) {
             style={{ cursor: 'pointer', position: 'relative' }}
             onClick={() => setSelectedCommentId(selectedCommentId === c.id ? null : c.id)}
           >
-            <div className="c-meta">
-              {c.name} • {new Date(c.created_at).toLocaleString()}
-            </div>
+            <div className="c-meta">{c.name} • {new Date(c.created_at).toLocaleString()}</div>
             <div>{c.content}</div>
             {selectedCommentId === c.id && (
               <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#333', borderRadius: '4px' }}>
@@ -190,7 +148,6 @@ export default function PostPage({ postId, session, onBack }) {
             )}
           </div>
         ))}
-
         <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
           <textarea
             placeholder={session ? 'Write a comment' : 'Log in to comment...'}
@@ -208,11 +165,7 @@ export default function PostPage({ postId, session, onBack }) {
         <div className="danger-zone">
           <h4>Delete post</h4>
           <label>
-            <input
-              type="checkbox"
-              checked={confirmDelete}
-              onChange={e => setConfirmDelete(e.target.checked)}
-            />
+            <input type="checkbox" checked={confirmDelete} onChange={e => setConfirmDelete(e.target.checked)} />
             I confirm I want to delete this post
           </label>
           <button onClick={handleDelete} disabled={!confirmDelete}>Delete</button>
@@ -229,18 +182,12 @@ export default function PostPage({ postId, session, onBack }) {
               Create a free account to upvote, downvote, comment, and share your take on games with the community.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <button
-                className="btn-primary"
-                style={{ padding: '0.85rem', fontSize: '1rem', width: '100%' }}
-                onClick={() => { setShowAuthPrompt(false); setAuthMode('signup') }}
-              >
+              <button className="btn-primary" style={{ padding: '0.85rem', fontSize: '1rem', width: '100%' }}
+                onClick={() => { setShowAuthPrompt(false); setAuthMode('signup') }}>
                 Create Free Account
               </button>
-              <button
-                className="btn-ghost"
-                style={{ padding: '0.75rem', width: '100%' }}
-                onClick={() => { setShowAuthPrompt(false); setAuthMode('login') }}
-              >
+              <button className="btn-ghost" style={{ padding: '0.75rem', width: '100%' }}
+                onClick={() => { setShowAuthPrompt(false); setAuthMode('login') }}>
                 Already have an account? Log in
               </button>
             </div>
@@ -248,9 +195,7 @@ export default function PostPage({ postId, session, onBack }) {
         </div>
       )}
 
-      {authMode && (
-        <AuthModal mode={authMode} onClose={() => setAuthMode(null)} />
-      )}
+      {authMode && <AuthModal mode={authMode} onClose={() => setAuthMode(null)} />}
     </div>
   )
 }

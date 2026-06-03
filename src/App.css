@@ -412,3 +412,13 @@ main { width: 100%; }
   border-color: #646cff;
   color: #fff;
 }
+
+.author-link {
+  color: #646cff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.author-link:hover {
+  text-decoration: underline;
+}

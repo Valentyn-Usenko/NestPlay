@@ -81,7 +81,7 @@ export default function PostModal({ session, onClose, onCreated }) {
     <div className="modal-overlay">
       <div className="modal" style={{ maxWidth: '560px', padding: '2rem', borderRadius: '16px', border: '1px solid #222' }}>
 
-        {/* Header */}
+        {}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
           <div>
             <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '700' }}>Create a Post</h2>
@@ -109,7 +109,7 @@ export default function PostModal({ session, onClose, onCreated }) {
             />
           </label>
 
-          {/* Opinion */}
+          {}
           <label style={labelStyle}>
             Your Opinion
             <textarea
@@ -121,7 +121,7 @@ export default function PostModal({ session, onClose, onCreated }) {
             />
           </label>
 
-          {/* Game search */}
+          {}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
             <span style={{ ...labelStyle, display: 'block' }}>
               Search Game <span style={{ color: '#fc4646' }}>*</span>
@@ -175,7 +175,7 @@ export default function PostModal({ session, onClose, onCreated }) {
             )}
           </div>
 
-          {/* Selected game preview */}
+          {}
           {selectedGame && (
             <div style={{
               background: '#0d0d0d',
@@ -209,7 +209,7 @@ export default function PostModal({ session, onClose, onCreated }) {
             </div>
           )}
 
-          {/* Actions */}
+          {}
           <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem' }}>
             <button
               type="submit"
