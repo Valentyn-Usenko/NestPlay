@@ -13,6 +13,7 @@ const AVATAR_MAP = {
 
 export default function FriendsPickerModal({ session, onClose }) {
   const [friends, setFriends] = useState([])
+  const [unreadMap, setUnreadMap] = useState({})
   const [loading, setLoading] = useState(true)
   const [chatFriend, setChatFriend] = useState(null)
   const mountedRef = useRef(true)
@@ -20,15 +21,17 @@ export default function FriendsPickerModal({ session, onClose }) {
   useEffect(() => {
     mountedRef.current = true
 
-    async function loadFriends() {
+    async function loadAll() {
+      const myId = session.user.id
+
       const { data: friendRows } = await supabase
         .from('friend_requests')
         .select('id, sender_id, receiver_id')
         .eq('status', 'accepted')
-        .or(`sender_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`)
+        .or(`sender_id.eq.${myId},receiver_id.eq.${myId}`)
 
       const friendIds = (friendRows || []).map(r =>
-        r.sender_id === session.user.id ? r.receiver_id : r.sender_id
+        r.sender_id === myId ? r.receiver_id : r.sender_id
       )
 
       let friendProfiles = []
@@ -43,23 +46,40 @@ export default function FriendsPickerModal({ session, onClose }) {
         })
       }
 
+      const { data: unreadRows } = await supabase
+        .from('messages')
+        .select('sender_id')
+        .eq('receiver_id', myId)
+        .or('read.eq.false,read.is.null')
+
+      const counts = {}
+      for (const row of (unreadRows || [])) {
+        counts[row.sender_id] = (counts[row.sender_id] || 0) + 1
+      }
+
       if (mountedRef.current) {
         setFriends(friendProfiles)
+        setUnreadMap(counts)
         setLoading(false)
       }
     }
 
-    loadFriends()
+    loadAll()
 
     return () => { mountedRef.current = false }
   }, [session])
+
+  const handleOpenChat = (friend) => {
+    setUnreadMap(prev => ({ ...prev, [friend.id]: 0 }))
+    setChatFriend(friend)
+  }
 
   if (chatFriend) {
     return <ChatModal session={session} friend={chatFriend} onClose={() => setChatFriend(null)} />
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal inbox-modal" onClick={e => e.stopPropagation()}>
         <button className="close-btn" onClick={onClose}>✕</button>
         <h2 className="settings-title">Messages</h2>
@@ -76,14 +96,16 @@ export default function FriendsPickerModal({ session, onClose }) {
         {!loading && friends.map(f => {
           const letter = (f.username || '?').charAt(0).toUpperCase()
           const gradient = AVATAR_MAP[f.avatar_color || 'purple']
+          const unread = unreadMap[f.id] || 0
           return (
-            <div key={f.id} className="inbox-request-card" style={{ cursor: 'pointer' }} onClick={() => setChatFriend(f)}>
+            <div key={f.id} className="inbox-request-card" style={{ cursor: 'pointer' }} onClick={() => handleOpenChat(f)}>
               <div className="inbox-request-left">
                 {f.avatar_url
                   ? <img src={f.avatar_url} alt="avatar" className="inbox-avatar" />
                   : <div className="inbox-avatar" style={{ background: gradient }}>{letter}</div>
                 }
                 <span className="inbox-sender-name">{f.username || 'Unknown'}</span>
+                {unread > 0 && <span className="msg-unread-badge">{unread}</span>}
               </div>
               <span style={{ color: '#555', fontSize: '0.85rem' }}>💬</span>
             </div>

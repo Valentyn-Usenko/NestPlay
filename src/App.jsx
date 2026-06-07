@@ -23,6 +23,7 @@ export default function App() {
   const [showInbox, setShowInbox] = useState(false)
   const [showMessages, setShowMessages] = useState(false)
   const [pendingCount, setPendingCount] = useState(0)
+  const [unreadMsgCount, setUnreadMsgCount] = useState(0)
   const menuRef = useRef(null)
 
   useEffect(() => {
@@ -43,28 +44,48 @@ export default function App() {
     if (!session) return
     const userId = session.user.id
 
-    async function loadCount() {
-      const { count } = await supabase
+    async function loadCounts() {
+      const { count: friendCount } = await supabase
         .from('friend_requests')
         .select('*', { count: 'exact', head: true })
         .eq('receiver_id', userId)
         .eq('status', 'pending')
-      setPendingCount(count || 0)
+      setPendingCount(friendCount || 0)
+
+      const { count: msgCount } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('receiver_id', userId)
+        .or('read.eq.false,read.is.null')
+      setUnreadMsgCount(msgCount || 0)
     }
 
-    loadCount()
+    loadCounts()
 
-    const channel = supabase
+    const friendChannel = supabase
       .channel('inbox-badge')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'friend_requests',
         filter: `receiver_id=eq.${userId}`
-      }, () => loadCount())
+      }, () => loadCounts())
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    const msgChannel = supabase
+      .channel('msg-badge')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'messages',
+        filter: `receiver_id=eq.${userId}`
+      }, () => loadCounts())
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(friendChannel)
+      supabase.removeChannel(msgChannel)
+    }
   }, [session])
 
   useEffect(() => {
@@ -99,6 +120,11 @@ export default function App() {
     setActivePost(null)
   }
 
+  const handleOpenMessages = () => {
+    setShowMessages(true)
+    setUnreadMsgCount(0)
+  }
+
   return (
     <>
       <header>
@@ -107,18 +133,20 @@ export default function App() {
             <span /><span /><span />
           </button>
 
+          {session && (
+            <button className="msg-nav-btn" onClick={handleOpenMessages} aria-label="Messages">
+              💬
+              {unreadMsgCount > 0 && <span className="msg-nav-dot" />}
+            </button>
+          )}
+
           {menuOpen && (
             <div className="hamburger-menu">
               {session && (
-                <>
-                  <button className="hamburger-menu-item" onClick={() => { setMenuOpen(false); setShowInbox(true) }}>
-                    📬 Inbox
-                    {pendingCount > 0 && <span className="inbox-badge">{pendingCount}</span>}
-                  </button>
-                  <button className="hamburger-menu-item" onClick={() => { setMenuOpen(false); setShowMessages(true) }}>
-                    💬 Messages
-                  </button>
-                </>
+                <button className="hamburger-menu-item" onClick={() => { setMenuOpen(false); setShowInbox(true) }}>
+                  📬 Inbox
+                  {pendingCount > 0 && <span className="inbox-badge">{pendingCount}</span>}
+                </button>
               )}
               <button className="hamburger-menu-item" onClick={() => { setMenuOpen(false); setShowSettings(true) }}>
                 ⚙️ Settings

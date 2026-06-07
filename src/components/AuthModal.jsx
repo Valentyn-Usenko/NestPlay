@@ -7,6 +7,7 @@ export default function AuthModal({ mode, onClose }) {
   const [username, setUsername] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [confirmSent, setConfirmSent] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -20,7 +21,7 @@ export default function AuthModal({ mode, onClose }) {
     setLoading(true)
     try {
       if (mode === 'signup') {
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -28,7 +29,11 @@ export default function AuthModal({ mode, onClose }) {
           },
         })
         if (signUpError) throw signUpError
-        onClose()
+        if (data.user && !data.session) {
+          setConfirmSent(true)
+        } else {
+          onClose()
+        }
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
         if (signInError) throw signInError
@@ -49,6 +54,23 @@ export default function AuthModal({ mode, onClose }) {
     color: '#fff',
     width: '100%',
     boxSizing: 'border-box',
+  }
+
+  if (confirmSent) {
+    return (
+      <div className="modal-overlay">
+        <div className="modal" style={{ maxWidth: '400px', textAlign: 'center' }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>📬</div>
+          <h2 style={{ marginTop: 0, marginBottom: '0.75rem' }}>Check your email</h2>
+          <p style={{ color: '#aaa', fontSize: '0.95rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+            We sent a confirmation link to <strong style={{ color: '#fff' }}>{email}</strong>. Click it to activate your account, then come back and log in.
+          </p>
+          <button className="btn-primary" style={{ width: '100%', padding: '0.8rem' }} onClick={onClose}>
+            Got it
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (

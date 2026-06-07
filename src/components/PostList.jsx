@@ -11,7 +11,7 @@ export default function PostList({ onOpenPost, onOpenProfile }) {
     setLoading(true)
 
     let query = supabase.from('posts').select('*')
-    if (search) query = query.ilike('title', `%${search}%`)
+    if (search) query = query.ilike('game_name', `%${search}%`)
     query = query.order('created_at', { ascending: false })
 
     const { data: postsData } = await query
@@ -59,7 +59,7 @@ export default function PostList({ onOpenPost, onOpenProfile }) {
   return (
     <div>
       <div className="feed-controls">
-        <input placeholder="Search title" value={search} onChange={e => setSearch(e.target.value)} />
+        <input placeholder="Search by game..." value={search} onChange={e => setSearch(e.target.value)} />
         <select value={sortBy} onChange={e => setSortBy(e.target.value)}>
           <option value="created_at">Newest</option>
           <option value="upvotes">Most upvoted</option>

@@ -113,7 +113,7 @@ export default function ChatModal({ session, friend, onClose }) {
   const grouped = groupMessages(messages)
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal chat-modal" onClick={e => e.stopPropagation()}>
 
         <div className="chat-header">

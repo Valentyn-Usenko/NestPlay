@@ -241,7 +241,6 @@ main { width: 100%; }
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* ── Profile Page ── */
 .profile-page {
   width: 100%;
   max-width: 700px;
@@ -479,6 +478,9 @@ main { width: 100%; }
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
   width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 .hamburger-menu-item:hover {
   background: rgba(100,108,255,0.12);
@@ -536,7 +538,6 @@ main { width: 100%; }
   font-style: italic;
 }
 
-/* ── Avatar picker ── */
 .avatar-preview-row {
   display: flex;
   align-items: center;
@@ -596,7 +597,6 @@ main { width: 100%; }
   transform: scale(1.1);
 }
 
-/* ── Privacy toggle ── */
 .settings-toggle-btn {
   background: transparent;
   border: 1px solid #444;
@@ -620,7 +620,6 @@ main { width: 100%; }
   background: rgba(255,152,0,0.1);
 }
 
-/* ── Private profile wall ── */
 .private-badge {
   font-size: 0.78rem;
   color: #ff9800;
@@ -647,7 +646,6 @@ main { width: 100%; }
 .private-wall h3 { margin: 0; color: #888; }
 .private-wall p { margin: 0; font-size: 0.9rem; }
 
-/* ── Settings modal base (if not already present) ── */
 .settings-modal {
   max-width: 480px;
   padding: 1.75rem 2rem 2rem;
@@ -747,12 +745,6 @@ main { width: 100%; }
   margin-left: auto;
   min-width: 18px;
   text-align: center;
-}
-
-.hamburger-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
 .inbox-modal {
@@ -1060,3 +1052,49 @@ main { width: 100%; }
 }
 .chat-send-btn:hover { background: #535bf2; }
 .chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.msg-nav-btn {
+  position: relative;
+  background: transparent;
+  border: 1px solid #333;
+  color: #ccc;
+  font-size: 1.1rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  flex-shrink: 0;
+}
+.msg-nav-btn:hover {
+  border-color: #646cff;
+  color: #fff;
+  background: rgba(100,108,255,0.08);
+}
+
+.msg-nav-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fc4646;
+  border: 2px solid #000;
+  pointer-events: none;
+}
+
+.msg-unread-badge {
+  background: #fc4646;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  border-radius: 99px;
+  padding: 0.1rem 0.4rem;
+  min-width: 18px;
+  text-align: center;
+  line-height: 1.4;
+}
