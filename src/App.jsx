@@ -173,7 +173,7 @@ export default function App() {
           )}
         </div>
 
-        <h1 style={{ cursor: 'pointer' }} onClick={goHome}>GameNest</h1>
+        <h1 style={{ cursor: 'pointer' }} onClick={goHome}>NestPlay</h1>
 
         <div className="header-right">
           {!session ? (
