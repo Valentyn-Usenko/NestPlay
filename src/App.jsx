@@ -50,7 +50,14 @@ export default function App() {
         .select('*', { count: 'exact', head: true })
         .eq('receiver_id', userId)
         .eq('status', 'pending')
-      setPendingCount(friendCount || 0)
+
+      const { count: notifCount } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('read', false)
+
+      setPendingCount((friendCount || 0) + (notifCount || 0))
 
       const { count: msgCount } = await supabase
         .from('messages')
@@ -82,9 +89,20 @@ export default function App() {
       }, () => loadCounts())
       .subscribe()
 
+    const notifChannel = supabase
+      .channel('notif-badge')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`
+      }, () => loadCounts())
+      .subscribe()
+
     return () => {
       supabase.removeChannel(friendChannel)
       supabase.removeChannel(msgChannel)
+      supabase.removeChannel(notifChannel)
     }
   }, [session])
 
@@ -190,7 +208,7 @@ export default function App() {
             />
           )}
           {activePage === 'feed' && !activePost && (
-            <PostList onOpenPost={(p) => setActivePost(p)} onOpenProfile={openUserProfile} />
+            <PostList onOpenPost={(p) => setActivePost(p)} onOpenProfile={openUserProfile} session={session} />
           )}
           {activePage === 'feed' && activePost && (
             <PostPage postId={activePost.id} session={session} onBack={() => setActivePost(null)} onOpenProfile={openUserProfile} />

@@ -1098,3 +1098,31 @@ main { width: 100%; }
   text-align: center;
   line-height: 1.4;
 }
+
+.upvote-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.6);
+  padding: 0.3rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.upvote-btn:hover:not(:disabled) {
+  background: rgba(100,108,255,0.15);
+  border-color: #646cff;
+  color: #a78bfa;
+}
+
+.upvote-btn.active {
+  background: rgba(100,108,255,0.2);
+  border-color: #646cff;
+  color: #a78bfa;
+}
+
+.upvote-btn:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
