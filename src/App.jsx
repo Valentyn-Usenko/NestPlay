@@ -4,8 +4,6 @@ import React, {
   useRef
 } from 'react'
 
-import { supabase } from './supabaseClient'
-
 import {
   API_BASE_URL
 } from './config'
@@ -91,8 +89,7 @@ export default function App() {
   // ==================================================
   // AUTH SESSION
   //
-  // Cognito takes priority when available.
-  // Supabase remains the temporary migration fallback.
+  // Cognito is now the only auth provider.
   // ==================================================
 
   useEffect(() => {
@@ -123,28 +120,6 @@ export default function App() {
 
     loadSession()
 
-    // ----------------------------------------------
-    // Existing Supabase users still need this
-    // during the migration.
-    // ----------------------------------------------
-
-    const {
-      data: {
-        subscription
-      }
-    } =
-      supabase.auth
-        .onAuthStateChange(
-          () => {
-            loadSession()
-          }
-        )
-
-    // ----------------------------------------------
-    // Cognito AuthModal will dispatch this after
-    // successful login/signup.
-    // ----------------------------------------------
-
     const handleAuthChanged =
       () => {
         loadSession()
@@ -158,8 +133,6 @@ export default function App() {
     return () => {
       mounted = false
 
-      subscription.unsubscribe()
-
       window.removeEventListener(
         'nestplay-auth-changed',
         handleAuthChanged
@@ -171,8 +144,7 @@ export default function App() {
   // ==================================================
   // BACKEND AUTH TEST
   //
-  // Temporary while auth migration is in progress.
-  // Works with either provider.
+  // Temporary while Cognito auth is being verified.
   // ==================================================
 
   useEffect(() => {
@@ -331,8 +303,6 @@ export default function App() {
 
   // ==================================================
   // AUTH SUCCESS
-  //
-  // Cognito AuthModal will use this soon.
   // ==================================================
 
   const handleAuthSuccess =
@@ -353,14 +323,8 @@ export default function App() {
   // ==================================================
 
   const handleLogout =
-    async () => {
-      // Remove Cognito tokens if present.
+    () => {
       clearCognitoTokens()
-
-      // Also remove any temporary legacy
-      // Supabase session so Cognito logout
-      // cannot fall back into Supabase.
-      await supabase.auth.signOut()
 
       setSession(null)
 

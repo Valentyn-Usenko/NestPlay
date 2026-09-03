@@ -4,8 +4,6 @@ import React, {
   useState
 } from 'react'
 
-import { supabase } from '../supabaseClient'
-
 import {
   cognitoChangePassword,
   cognitoUpdateEmail,
@@ -23,6 +21,7 @@ import {
   uploadAvatar,
   deleteAvatar
 } from '../api'
+
 
 const AVATAR_COLORS = [
   {
@@ -62,6 +61,7 @@ const AVATAR_COLORS = [
       'linear-gradient(135deg, #f7971e, #ffd200)'
   }
 ]
+
 
 export default function SettingsModal({
   onClose,
@@ -175,6 +175,7 @@ export default function SettingsModal({
     ) ||
     AVATAR_COLORS[0]
 
+
   // ==================================================
   // LOAD PROFILE FROM AWS
   // ==================================================
@@ -233,6 +234,7 @@ export default function SettingsModal({
     }
   }, [session])
 
+
   // ==================================================
   // PANEL RESET
   // ==================================================
@@ -276,14 +278,11 @@ export default function SettingsModal({
       )
     }
 
+
   // ==================================================
   // CHANGE USERNAME
   //
-  // Cognito account:
-  // AWS/RDS profile only
-  //
-  // Legacy account:
-  // Supabase metadata + AWS/RDS profile
+  // Username is stored in the AWS/RDS profile.
   // ==================================================
 
   const handleChangeUsername =
@@ -321,34 +320,6 @@ export default function SettingsModal({
       )
 
       try {
-        // ------------------------------------------
-        // LEGACY SUPABASE ACCOUNT ONLY
-        // ------------------------------------------
-
-        if (
-          session?.provider !==
-          'cognito'
-        ) {
-          const {
-            error
-          } =
-            await supabase.auth
-              .updateUser({
-                data: {
-                  username:
-                    trimmed
-                }
-              })
-
-          if (error) {
-            throw error
-          }
-        }
-
-        // ------------------------------------------
-        // AWS / RDS PROFILE
-        // ------------------------------------------
-
         const profile =
           await updateProfile({
             username:
@@ -402,8 +373,11 @@ export default function SettingsModal({
       }
     }
 
+
   // ==================================================
   // CHANGE EMAIL
+  //
+  // Cognito is now the only auth provider.
   // ==================================================
 
   const handleChangeEmail =
@@ -441,73 +415,34 @@ export default function SettingsModal({
       )
 
       try {
-        // ------------------------------------------
-        // COGNITO ACCOUNT
-        // ------------------------------------------
+        const accessToken =
+          await getAuthAccessToken()
 
-        if (
-          session?.provider ===
-          'cognito'
-        ) {
-          const accessToken =
-            await getAuthAccessToken()
-
-          if (!accessToken) {
-            throw new Error(
-              'Your session expired. Please log in again.'
-            )
-          }
-
-          await cognitoUpdateEmail({
-            accessToken,
-            email:
-              trimmed
-          })
-
-          if (
-            mountedRef.current
-          ) {
-            setEmailVerificationPending(
-              true
-            )
-
-            setMessage({
-              text:
-                'Verification code sent to your new email.',
-              type:
-                'success'
-            })
-          }
+        if (!accessToken) {
+          throw new Error(
+            'Your session expired. Please log in again.'
+          )
         }
 
-        // ------------------------------------------
-        // TEMPORARY SUPABASE FALLBACK
-        // ------------------------------------------
+        await cognitoUpdateEmail({
+          accessToken,
+          email:
+            trimmed
+        })
 
-        else {
-          const {
-            error
-          } =
-            await supabase.auth
-              .updateUser({
-                email:
-                  trimmed
-              })
+        if (
+          mountedRef.current
+        ) {
+          setEmailVerificationPending(
+            true
+          )
 
-          if (error) {
-            throw error
-          }
-
-          if (
-            mountedRef.current
-          ) {
-            setMessage({
-              text:
-                'Confirmation sent to your new email. Check your inbox!',
-              type:
-                'success'
-            })
-          }
+          setMessage({
+            text:
+              'Verification code sent to your new email.',
+            type:
+              'success'
+          })
         }
       } catch (error) {
         console.error(
@@ -536,6 +471,7 @@ export default function SettingsModal({
         }
       }
     }
+
 
   // ==================================================
   // VERIFY NEW COGNITO EMAIL
@@ -589,6 +525,10 @@ export default function SettingsModal({
             ''
           )
 
+          setNewEmail(
+            ''
+          )
+
           setMessage({
             text:
               'Email verified successfully!',
@@ -623,6 +563,7 @@ export default function SettingsModal({
         }
       }
     }
+
 
   // ==================================================
   // RESEND COGNITO EMAIL CODE
@@ -690,8 +631,11 @@ export default function SettingsModal({
       }
     }
 
+
   // ==================================================
   // CHANGE PASSWORD
+  //
+  // Cognito is now the only auth provider.
   // ==================================================
 
   const handleChangePassword =
@@ -747,48 +691,20 @@ export default function SettingsModal({
       )
 
       try {
-        // ------------------------------------------
-        // COGNITO ACCOUNT
-        // ------------------------------------------
+        const accessToken =
+          await getAuthAccessToken()
 
-        if (
-          session?.provider ===
-          'cognito'
-        ) {
-          const accessToken =
-            await getAuthAccessToken()
-
-          if (!accessToken) {
-            throw new Error(
-              'Your session has expired. Please log in again.'
-            )
-          }
-
-          await cognitoChangePassword({
-            accessToken,
-            currentPassword,
-            newPassword
-          })
+        if (!accessToken) {
+          throw new Error(
+            'Your session has expired. Please log in again.'
+          )
         }
 
-        // ------------------------------------------
-        // TEMPORARY LEGACY FALLBACK
-        // ------------------------------------------
-
-        else {
-          const {
-            error
-          } =
-            await supabase.auth
-              .updateUser({
-                password:
-                  newPassword
-              })
-
-          if (error) {
-            throw error
-          }
-        }
+        await cognitoChangePassword({
+          accessToken,
+          currentPassword,
+          newPassword
+        })
 
         setCurrentPassword(
           ''
@@ -827,6 +743,7 @@ export default function SettingsModal({
         )
       }
     }
+
 
   // ==================================================
   // AVATAR UPLOAD
@@ -926,6 +843,7 @@ export default function SettingsModal({
       }
     }
 
+
   // ==================================================
   // RESET AVATAR
   // ==================================================
@@ -997,6 +915,7 @@ export default function SettingsModal({
         }
       }
     }
+
 
   // ==================================================
   // AVATAR COLOR
@@ -1077,6 +996,7 @@ export default function SettingsModal({
       }
     }
 
+
   // ==================================================
   // PRIVACY — AWS
   // ==================================================
@@ -1132,10 +1052,12 @@ export default function SettingsModal({
       }
     }
 
+
   const previewGradient =
     avatarUrl
       ? null
       : currentColor.gradient
+
 
   return (
     <div
@@ -1153,12 +1075,13 @@ export default function SettingsModal({
           className="close-btn"
           onClick={onClose}
         >
-          ✕
+          ×
         </button>
 
         <h2 className="settings-title">
           Settings
         </h2>
+
 
         {/* ========================================== */}
         {/* ACCOUNT */}
@@ -1168,6 +1091,7 @@ export default function SettingsModal({
           <h3 className="settings-section-heading">
             Account
           </h3>
+
 
           {/* USERNAME */}
 
@@ -1249,6 +1173,7 @@ export default function SettingsModal({
               )}
             </div>
           )}
+
 
           {/* EMAIL */}
 
@@ -1393,6 +1318,7 @@ export default function SettingsModal({
             </div>
           )}
 
+
           {/* PASSWORD */}
 
           <div className="settings-row">
@@ -1506,6 +1432,7 @@ export default function SettingsModal({
           )}
         </div>
 
+
         {/* ========================================== */}
         {/* PROFILE */}
         {/* ========================================== */}
@@ -1514,6 +1441,7 @@ export default function SettingsModal({
           <h3 className="settings-section-heading">
             Profile
           </h3>
+
 
           {/* AVATAR */}
 
@@ -1629,8 +1557,7 @@ export default function SettingsModal({
               {!avatarUrl && (
                 <>
                   <p className="settings-color-label">
-                    Or pick a
-                    color:
+                    Or pick a color:
                   </p>
 
                   <div className="avatar-color-grid">
@@ -1679,6 +1606,7 @@ export default function SettingsModal({
             </div>
           )}
 
+
           {/* PRIVACY */}
 
           <div className="settings-row">
@@ -1726,6 +1654,7 @@ export default function SettingsModal({
           </div>
         </div>
 
+
         {/* ========================================== */}
         {/* DANGER ZONE */}
         {/* ========================================== */}
@@ -1748,7 +1677,7 @@ export default function SettingsModal({
                     '#888'
                 }}
               >
-                Temporarily unavailable during AWS auth migration
+                Temporarily unavailable
               </span>
             </div>
 
@@ -1758,6 +1687,7 @@ export default function SettingsModal({
               style={{
                 opacity:
                   0.5,
+
                 cursor:
                   'not-allowed'
               }}

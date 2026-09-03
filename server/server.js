@@ -24,9 +24,7 @@ const {
 const pool = require('./db')
 
 const {
-  verifyAuthToken,
-  verifyCognitoToken,
-  verifySupabaseToken
+  verifyAuthToken
 } = require('./auth')
 
 
@@ -46,16 +44,8 @@ app.use(
       process.env.FRONTEND_URL
   })
 )
+
 app.use(express.json())
-
-
-// ==================================================
-// SUPABASE AUTH
-//
-// TEMPORARY:
-// Supabase is still validating login tokens.
-// We will replace this with Cognito later.
-// ==================================================
 
 
 // ==================================================
@@ -268,6 +258,7 @@ async function optionalAuth(
   }
 }
 
+
 // ==================================================
 // COGNITO NEW USER BOOTSTRAP
 //
@@ -315,7 +306,6 @@ app.post(
           })
       }
 
-      // Already linked.
       if (
         user.mapped === true
       ) {
@@ -464,319 +454,6 @@ app.post(
   }
 )
 
-// ==================================================
-// LINK EXISTING SUPABASE USER TO COGNITO
-//
-// Authorization:
-//   Bearer <Cognito access token>
-//
-// X-Legacy-Authorization:
-//   Bearer <Supabase access token>
-//
-// Both identities must be independently verified.
-// The existing Supabase UUID is preserved.
-// ==================================================
-
-app.post(
-  '/api/auth/cognito/link',
-  async (req, res) => {
-    const cognitoHeader =
-      req.headers.authorization
-
-    const legacyHeader =
-      req.headers[
-        'x-legacy-authorization'
-      ]
-
-    if (
-      !cognitoHeader ||
-      !cognitoHeader.startsWith(
-        'Bearer '
-      )
-    ) {
-      return res.status(401).json({
-        error:
-          'Cognito authentication required'
-      })
-    }
-
-    if (
-      !legacyHeader ||
-      !legacyHeader.startsWith(
-        'Bearer '
-      )
-    ) {
-      return res.status(401).json({
-        error:
-          'Legacy authentication required'
-      })
-    }
-
-    const cognitoToken =
-      cognitoHeader.slice(7)
-
-    const legacyToken =
-      legacyHeader.slice(7)
-
-    const cognitoUser =
-      await verifyCognitoToken(
-        cognitoToken
-      )
-
-    if (
-      !cognitoUser ||
-      cognitoUser.provider !==
-        'cognito'
-    ) {
-      return res.status(401).json({
-        error:
-          'Invalid Cognito token'
-      })
-    }
-
-    const legacyUser =
-      await verifySupabaseToken(
-        legacyToken
-      )
-
-    if (!legacyUser?.id) {
-      return res.status(401).json({
-        error:
-          'Invalid legacy token'
-      })
-    }
-
-    const legacyUserId =
-      legacyUser.id
-
-    const cognitoSub =
-      cognitoUser.cognitoSub
-
-    // If this Cognito identity is
-    // already mapped, only allow it
-    // when it already points to this
-    // exact legacy profile.
-    if (cognitoUser.mapped) {
-      if (
-        cognitoUser.id ===
-        legacyUserId
-      ) {
-        return res.json({
-          success: true,
-          alreadyLinked: true,
-          userId:
-            legacyUserId
-        })
-      }
-
-      return res.status(409).json({
-        error:
-          'This Cognito account is already linked to another NestPlay profile'
-      })
-    }
-
-    const client =
-      await pool.connect()
-
-    try {
-      await client.query('BEGIN')
-
-      // --------------------------------------------
-      // Make sure the old UUID really exists
-      // in the AWS profiles table.
-      // --------------------------------------------
-
-      const profileResult =
-        await client.query(
-          `
-          SELECT
-            id,
-            username,
-            email
-          FROM profiles
-          WHERE id = $1
-          LIMIT 1
-          `,
-          [legacyUserId]
-        )
-
-      if (
-        profileResult.rows.length === 0
-      ) {
-        await client.query(
-          'ROLLBACK'
-        )
-
-        return res.status(404).json({
-          error:
-            'Existing NestPlay profile was not found in AWS'
-        })
-      }
-
-      // --------------------------------------------
-      // Check whether this Cognito sub became
-      // linked between verification and now.
-      // --------------------------------------------
-
-      const existingCognito =
-        await client.query(
-          `
-          SELECT user_id
-          FROM auth_identities
-          WHERE
-            provider = 'cognito'
-            AND provider_user_id = $1
-          LIMIT 1
-          `,
-          [cognitoSub]
-        )
-
-      if (
-        existingCognito.rows
-          .length > 0
-      ) {
-        const linkedUserId =
-          existingCognito
-            .rows[0]
-            .user_id
-
-        await client.query(
-          'ROLLBACK'
-        )
-
-        if (
-          linkedUserId ===
-          legacyUserId
-        ) {
-          return res.json({
-            success: true,
-            alreadyLinked: true,
-            userId:
-              legacyUserId
-          })
-        }
-
-        return res.status(409).json({
-          error:
-            'This Cognito account is already linked to another NestPlay profile'
-        })
-      }
-
-      // --------------------------------------------
-      // Make sure the legacy profile is not
-      // already connected to another Cognito
-      // identity.
-      // --------------------------------------------
-
-      const existingProfileLink =
-        await client.query(
-          `
-          SELECT provider_user_id
-          FROM auth_identities
-          WHERE
-            provider = 'cognito'
-            AND user_id = $1
-          LIMIT 1
-          `,
-          [legacyUserId]
-        )
-
-      if (
-        existingProfileLink.rows
-          .length > 0
-      ) {
-        await client.query(
-          'ROLLBACK'
-        )
-
-        return res.status(409).json({
-          error:
-            'This NestPlay profile is already linked to another Cognito account'
-        })
-      }
-
-      // --------------------------------------------
-      // Preserve the OLD UUID.
-      //
-      // We do NOT create a new profiles row.
-      // We only attach Cognito to the existing row.
-      // --------------------------------------------
-
-      await client.query(
-        `
-        INSERT INTO auth_identities (
-          provider,
-          provider_user_id,
-          user_id
-        )
-        VALUES (
-          'cognito',
-          $1,
-          $2
-        )
-        `,
-        [
-          cognitoSub,
-          legacyUserId
-        ]
-      )
-
-      await client.query('COMMIT')
-
-      const profile =
-        profileResult.rows[0]
-
-      return res.json({
-        success: true,
-
-        userId:
-          profile.id,
-
-        profile: {
-          id:
-            profile.id,
-
-          username:
-            profile.username,
-
-          email:
-            profile.email ||
-            legacyUser.email ||
-            null
-        }
-      })
-    } catch (error) {
-      try {
-        await client.query(
-          'ROLLBACK'
-        )
-      } catch {
-        // Ignore rollback errors.
-      }
-
-      console.error(
-        'Cognito link error:',
-        error
-      )
-
-      if (
-        error.code === '23505'
-      ) {
-        return res.status(409).json({
-          error:
-            'This account is already linked'
-        })
-      }
-
-      return res.status(500).json({
-        error:
-          'Could not link accounts'
-      })
-    } finally {
-      client.release()
-    }
-  }
-)
 
 // ==================================================
 // PROFILE HELPERS
@@ -2145,7 +1822,6 @@ app.patch(
   }
 )
 
-
 // ==================================================
 // FRIEND REQUESTS
 // ==================================================
@@ -3135,7 +2811,6 @@ app.patch(
   }
 )
 
-
 // ==================================================
 // PROFILES
 // ==================================================
@@ -3700,7 +3375,6 @@ app.delete(
   }
 )
 
-
 // ==================================================
 // MULTER / GENERAL ERROR HANDLER
 // ==================================================
@@ -3765,6 +3439,7 @@ app.use(
       })
   }
 )
+
 
 // ==================================================
 // RAWG GAME SEARCH
@@ -3878,6 +3553,7 @@ app.get(
     }
   }
 )
+
 
 // ==================================================
 // START SERVER

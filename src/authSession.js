@@ -1,7 +1,11 @@
-import { supabase } from './supabaseClient'
-import { cognitoRefresh } from './cognitoClient'
+import {
+  cognitoRefresh
+} from './cognitoClient'
 
-const API_URL = 'http://localhost:3001'
+import {
+  API_BASE_URL
+} from './config'
+
 
 const COGNITO_ACCESS_TOKEN =
   'nestplay_cognito_access_token'
@@ -12,6 +16,10 @@ const COGNITO_ID_TOKEN =
 const COGNITO_REFRESH_TOKEN =
   'nestplay_cognito_refresh_token'
 
+
+// ==================================================
+// SAVE COGNITO TOKENS
+// ==================================================
 
 export function saveCognitoTokens(
   authenticationResult
@@ -45,6 +53,10 @@ export function saveCognitoTokens(
 }
 
 
+// ==================================================
+// GET STORED TOKENS
+// ==================================================
+
 export function getCognitoAccessToken() {
   return localStorage.getItem(
     COGNITO_ACCESS_TOKEN
@@ -65,6 +77,10 @@ export function getCognitoRefreshToken() {
   )
 }
 
+
+// ==================================================
+// CLEAR COGNITO TOKENS
+// ==================================================
 
 export function clearCognitoTokens() {
   localStorage.removeItem(
@@ -125,14 +141,16 @@ function tokenIsExpired(token) {
       Date.now() / 1000
     )
 
-  // Refresh a little before
-  // the token actually expires.
-  return payload.exp <= now + 30
+  // Refresh shortly before expiration.
+  return (
+    payload.exp <=
+    now + 30
+  )
 }
 
 
 // ==================================================
-// GET VALID COGNITO TOKEN
+// GET VALID COGNITO ACCESS TOKEN
 // ==================================================
 
 async function getValidCognitoAccessToken() {
@@ -143,7 +161,11 @@ async function getValidCognitoAccessToken() {
     return null
   }
 
-  if (!tokenIsExpired(accessToken)) {
+  if (
+    !tokenIsExpired(
+      accessToken
+    )
+  ) {
     return accessToken
   }
 
@@ -152,6 +174,7 @@ async function getValidCognitoAccessToken() {
 
   if (!refreshToken) {
     clearCognitoTokens()
+
     return null
   }
 
@@ -169,6 +192,7 @@ async function getValidCognitoAccessToken() {
         ?.AccessToken
     ) {
       clearCognitoTokens()
+
       return null
     }
 
@@ -197,29 +221,12 @@ async function getValidCognitoAccessToken() {
 // ==================================================
 // TOKEN FOR API.JS
 //
-// Cognito is preferred.
-// Supabase remains the migration fallback.
+// Cognito is now the only auth provider.
 // ==================================================
 
 export async function getAuthAccessToken() {
-  const cognitoToken =
-    await getValidCognitoAccessToken()
-
-  if (cognitoToken) {
-    return cognitoToken
-  }
-
-  const {
-    data: {
-      session
-    }
-  } =
-    await supabase.auth
-      .getSession()
-
   return (
-    session?.access_token ||
-    null
+    await getValidCognitoAccessToken()
   )
 }
 
@@ -227,9 +234,8 @@ export async function getAuthAccessToken() {
 // ==================================================
 // NORMALIZED APP SESSION
 //
-// Makes Cognito look similar to the old
-// Supabase session so existing components
-// can continue using:
+// Keeps the same session shape that the existing
+// React components already expect:
 //
 // session.user.id
 // session.user.email
@@ -241,91 +247,84 @@ export async function getCurrentAuthSession() {
   const cognitoToken =
     await getValidCognitoAccessToken()
 
-  if (cognitoToken) {
-    try {
-      const response =
-        await fetch(
-          `${API_URL}/api/profile`,
-          {
-            headers: {
-              Authorization:
-                `Bearer ${cognitoToken}`
-            }
-          }
-        )
-
-      if (response.ok) {
-        const profile =
-          await response.json()
-
-        const idPayload =
-          decodeJwt(
-            getCognitoIdToken()
-          )
-
-        return {
-          provider: 'cognito',
-
-          access_token:
-            cognitoToken,
-
-          user: {
-            id: profile.id,
-
-            email:
-              profile.email ||
-              idPayload?.email ||
-              null,
-
-            created_at:
-              profile.created_at ||
-              null,
-
-            user_metadata: {
-              username:
-                profile.username ||
-                idPayload?.[
-                  'cognito:username'
-                ] ||
-                null
-            }
-          }
-        }
-      }
-
-      // Invalid or unlinked Cognito session.
-      if (
-        response.status === 401 ||
-        response.status === 403
-      ) {
-        clearCognitoTokens()
-      }
-    } catch (error) {
-      console.error(
-        'Could not load Cognito session:',
-        error
-      )
-    }
-  }
-
-  // ----------------------------------------------
-  // OLD USERS CONTINUE USING SUPABASE FOR NOW
-  // ----------------------------------------------
-
-  const {
-    data: {
-      session
-    }
-  } =
-    await supabase.auth
-      .getSession()
-
-  if (!session) {
+  if (!cognitoToken) {
     return null
   }
 
-  return {
-    ...session,
-    provider: 'supabase'
+  try {
+    const response =
+      await fetch(
+        `${API_BASE_URL}/api/profile`,
+        {
+          headers: {
+            Authorization:
+              `Bearer ${cognitoToken}`
+          }
+        }
+      )
+
+    if (
+      response.status === 401 ||
+      response.status === 403
+    ) {
+      clearCognitoTokens()
+
+      return null
+    }
+
+    if (!response.ok) {
+      console.error(
+        'Could not load Cognito profile:',
+        response.status
+      )
+
+      return null
+    }
+
+    const profile =
+      await response.json()
+
+    const idPayload =
+      decodeJwt(
+        getCognitoIdToken()
+      )
+
+    return {
+      provider:
+        'cognito',
+
+      access_token:
+        cognitoToken,
+
+      user: {
+        id:
+          profile.id,
+
+        email:
+          profile.email ||
+          idPayload?.email ||
+          null,
+
+        created_at:
+          profile.created_at ||
+          null,
+
+        user_metadata: {
+          username:
+            profile.username ||
+            idPayload?.[
+              'cognito:username'
+            ] ||
+            null
+        }
+      }
+    }
+  } catch (error) {
+    console.error(
+      'Could not load Cognito session:',
+      error
+    )
+
+    return null
   }
 }

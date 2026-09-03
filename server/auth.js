@@ -1,22 +1,12 @@
 /* global require, process, module */
 
-const { CognitoJwtVerifier } =
+const {
+  CognitoJwtVerifier
+} =
   require('aws-jwt-verify')
 
 const pool =
   require('./db')
-
-const {
-  createClient
-} =
-  require('@supabase/supabase-js')
-
-
-const supabase =
-  createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY
-  )
 
 
 const cognitoVerifier =
@@ -31,6 +21,10 @@ const cognitoVerifier =
       process.env.COGNITO_CLIENT_ID
   })
 
+
+// ==================================================
+// VERIFY COGNITO ACCESS TOKEN
+// ==================================================
 
 async function verifyCognitoToken(
   token
@@ -65,6 +59,14 @@ async function verifyCognitoToken(
         `,
         [cognitoSub]
       )
+
+    // ----------------------------------------------
+    // Valid Cognito account, but no NestPlay
+    // profile mapping yet.
+    //
+    // This is still needed for new-account
+    // bootstrap.
+    // ----------------------------------------------
 
     if (
       result.rows.length === 0
@@ -118,66 +120,24 @@ async function verifyCognitoToken(
 }
 
 
-async function verifySupabaseToken(
-  token
-) {
-  try {
-    const {
-      data,
-      error
-    } =
-      await supabase.auth
-        .getUser(token)
-
-    if (
-      error ||
-      !data?.user
-    ) {
-      return null
-    }
-
-    return {
-      ...data.user,
-
-      provider:
-        'supabase',
-
-      mapped:
-        true
-    }
-  } catch {
-    return null
-  }
-}
-
+// ==================================================
+// VERIFY APP AUTH TOKEN
+//
+// Cognito is now the only authentication provider.
+// ==================================================
 
 async function verifyAuthToken(
   token
 ) {
-  const cognitoUser =
+  return (
     await verifyCognitoToken(
       token
     )
-
-  if (cognitoUser) {
-    return cognitoUser
-  }
-
-  const supabaseUser =
-    await verifySupabaseToken(
-      token
-    )
-
-  if (supabaseUser) {
-    return supabaseUser
-  }
-
-  return null
+  )
 }
 
 
 module.exports = {
   verifyAuthToken,
-  verifyCognitoToken,
-  verifySupabaseToken
+  verifyCognitoToken
 }

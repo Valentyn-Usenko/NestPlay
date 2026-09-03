@@ -3,10 +3,6 @@ import React, {
 } from 'react'
 
 import {
-  supabase
-} from '../supabaseClient'
-
-import {
   API_BASE_URL as API_URL
 } from '../config'
 
@@ -55,33 +51,11 @@ export default function AuthModal({
   const [loading, setLoading] =
     useState(false)
 
-  // ----------------------------------------------
-  // Existing-account migration information
-  // ----------------------------------------------
-
-  const [
-    legacyToken,
-    setLegacyToken
-  ] = useState(null)
-
-  const [
-    legacyUsername,
-    setLegacyUsername
-  ] = useState('')
-
-  const [
-    legacyEmail,
-    setLegacyEmail
-  ] = useState('')
-
-  const [
-    migrationPassword,
-    setMigrationPassword
-  ] = useState('')
-
 
   // ==================================================
   // NEW ACCOUNT BOOTSTRAP
+  //
+  // Creates the RDS profile after Cognito signup.
   // ==================================================
 
   const bootstrapCognitoProfile =
@@ -143,6 +117,8 @@ export default function AuthModal({
 
   // ==================================================
   // FINISH AUTH
+  //
+  // Saves Cognito tokens and refreshes App session.
   // ==================================================
 
   const finishAuth =
@@ -150,13 +126,6 @@ export default function AuthModal({
       saveCognitoTokens(
         authenticationResult
       )
-
-      // Remove legacy session.
-      try {
-        await supabase.auth.signOut()
-      } catch {
-        // Nothing else needed.
-      }
 
       window.dispatchEvent(
         new Event(
@@ -173,10 +142,7 @@ export default function AuthModal({
 
 
   // ==================================================
-  // NEW COGNITO ACCOUNT
-  //
-  // Only new users are allowed to create
-  // a brand-new RDS profile here.
+  // FINISH NEW ACCOUNT
   // ==================================================
 
   const finishNewAccount =
@@ -198,12 +164,8 @@ export default function AuthModal({
   // ==================================================
   // NORMAL COGNITO LOGIN
   //
-  // IMPORTANT:
-  // We do NOT bootstrap an unmapped Cognito user
-  // from a normal login.
-  //
-  // This prevents accidentally making a duplicate
-  // RDS profile during an interrupted migration.
+  // A Cognito account must already have an RDS
+  // profile mapping.
   // ==================================================
 
   const finishCognitoLogin =
@@ -229,14 +191,34 @@ export default function AuthModal({
           }
         )
 
-      if (response.status === 403) {
+      let data = {}
+
+      try {
+        data =
+          await response.json()
+      } catch {
+        data = {}
+      }
+
+      if (
+        response.status === 401
+      ) {
         throw new Error(
-          'This Cognito account has not finished migrating yet. Log in using your original account email to finish the migration.'
+          'Your login session could not be verified.'
+        )
+      }
+
+      if (
+        response.status === 403
+      ) {
+        throw new Error(
+          'This Cognito account is not linked to a NestPlay profile.'
         )
       }
 
       if (!response.ok) {
         throw new Error(
+          data.error ||
           'Could not verify your Cognito account.'
         )
       }
@@ -248,108 +230,7 @@ export default function AuthModal({
 
 
   // ==================================================
-  // LOAD EXISTING AWS PROFILE USING
-  // VERIFIED SUPABASE TOKEN
-  // ==================================================
-
-  const loadLegacyProfile =
-    async token => {
-      const response =
-        await fetch(
-          `${API_URL}/api/profile`,
-          {
-            headers: {
-              Authorization:
-                `Bearer ${token}`
-            }
-          }
-        )
-
-      let data = {}
-
-      try {
-        data =
-          await response.json()
-      } catch {
-        data = {}
-      }
-
-      if (!response.ok) {
-        throw new Error(
-          data.error ||
-          'Could not load your existing NestPlay profile.'
-        )
-      }
-
-      return data
-    }
-
-
-  // ==================================================
-  // LINK EXISTING PROFILE
-  // ==================================================
-
-  const linkExistingAccount =
-    async authenticationResult => {
-      const cognitoToken =
-        authenticationResult
-          ?.AccessToken
-
-      if (!cognitoToken) {
-        throw new Error(
-          'Cognito access token is missing.'
-        )
-      }
-
-      if (!legacyToken) {
-        throw new Error(
-          'Your original login session expired. Please start again.'
-        )
-      }
-
-      const response =
-        await fetch(
-          `${API_URL}/api/auth/cognito/link`,
-          {
-            method: 'POST',
-
-            headers: {
-              Authorization:
-                `Bearer ${cognitoToken}`,
-
-              'X-Legacy-Authorization':
-                `Bearer ${legacyToken}`,
-
-              'Content-Type':
-                'application/json'
-            }
-          }
-        )
-
-      let data = {}
-
-      try {
-        data =
-          await response.json()
-      } catch {
-        data = {}
-      }
-
-      if (!response.ok) {
-        throw new Error(
-          data.error ||
-          'Could not migrate your account.'
-        )
-      }
-
-      await finishAuth(
-        authenticationResult
-      )
-    }
-
-
-  // ==================================================
-  // NEW ACCOUNT SIGN UP
+  // SIGN UP
   // ==================================================
 
   const handleSignUp =
@@ -375,6 +256,22 @@ export default function AuthModal({
         return
       }
 
+      if (!cleanEmail) {
+        setError(
+          'Email cannot be empty.'
+        )
+
+        return
+      }
+
+      if (!password) {
+        setError(
+          'Password cannot be empty.'
+        )
+
+        return
+      }
+
       setLoading(true)
 
       try {
@@ -389,6 +286,8 @@ export default function AuthModal({
             password
           })
 
+        // Cognito may immediately confirm
+        // depending on pool configuration.
         if (result.UserConfirmed) {
           const loginResult =
             await cognitoSignIn({
@@ -492,7 +391,7 @@ export default function AuthModal({
 
 
   // ==================================================
-  // RESEND NEW ACCOUNT CODE
+  // RESEND CONFIRMATION CODE
   // ==================================================
 
   const handleNewResend =
@@ -523,9 +422,7 @@ export default function AuthModal({
   // ==================================================
   // LOGIN
   //
-  // 1. Try Cognito
-  // 2. If that fails, try existing Supabase account
-  // 3. If Supabase succeeds, begin migration
+  // Cognito is now the only authentication provider.
   // ==================================================
 
   const handleLogin =
@@ -539,14 +436,29 @@ export default function AuthModal({
       const cleanLogin =
         login.trim()
 
-      let cognitoError = null
+      if (!cleanLogin) {
+        setError(
+          'Enter your email or username.'
+        )
 
+        setLoading(false)
 
-      // ----------------------------------------------
-      // FIRST: COGNITO
-      // ----------------------------------------------
+        return
+      }
+
+      if (!password) {
+        setError(
+          'Enter your password.'
+        )
+
+        setLoading(false)
+
+        return
+      }
 
       try {
+        clearCognitoTokens()
+
         const result =
           await cognitoSignIn({
             login:
@@ -570,339 +482,17 @@ export default function AuthModal({
         await finishCognitoLogin(
           authResult
         )
-
-        return
       } catch (err) {
-        cognitoError = err
-
         clearCognitoTokens()
 
-        console.log(
-          'Cognito login failed. Checking for an existing NestPlay account.'
-        )
-      }
-
-
-      // ----------------------------------------------
-      // LEGACY ACCOUNTS USED EMAIL LOGIN
-      // ----------------------------------------------
-
-      if (
-        !cleanLogin.includes('@')
-      ) {
-        setError(
-          cognitoError?.message ||
-          'Incorrect username or password.'
-        )
-
-        setLoading(false)
-
-        return
-      }
-
-
-      // ----------------------------------------------
-      // VERIFY OLD SUPABASE ACCOUNT
-      // ----------------------------------------------
-
-      try {
-        const {
-          data,
-          error:
-            legacyError
-        } =
-          await supabase.auth
-            .signInWithPassword({
-              email:
-                cleanLogin,
-
-              password
-            })
-
-        if (
-          legacyError ||
-          !data?.session
-        ) {
-          throw (
-            legacyError ||
-            new Error(
-              'Legacy login failed.'
-            )
-          )
-        }
-
-        const oldToken =
-          data.session
-            .access_token
-
-        const profile =
-          await loadLegacyProfile(
-            oldToken
-          )
-
-        if (!profile?.username) {
-          throw new Error(
-            'Your existing NestPlay profile does not have a username.'
-          )
-        }
-
-        setLegacyToken(
-          oldToken
-        )
-
-        setLegacyUsername(
-          profile.username
-        )
-
-        setLegacyEmail(
-          data.session.user.email ||
-          cleanLogin
-        )
-
-        // Start with their existing password.
-        // They may change it if Cognito's
-        // password policy requires it.
-        setMigrationPassword(
-          password
-        )
-
-        setStep(
-          'migrate'
-        )
-
-        setMessage(
-          'Existing NestPlay account found.'
-        )
-      } catch {
-        setError(
-          cognitoError?.message ||
-          'Incorrect email or password.'
-        )
-      } finally {
-        setLoading(false)
-      }
-    }
-
-
-  // ==================================================
-  // START EXISTING ACCOUNT MIGRATION
-  // ==================================================
-
-  const handleMigrationStart =
-    async e => {
-      e.preventDefault()
-
-      setError('')
-      setMessage('')
-      setLoading(true)
-
-      try {
-        let signUpResult
-
-        try {
-          signUpResult =
-            await cognitoSignUp({
-              username:
-                legacyUsername,
-
-              email:
-                legacyEmail,
-
-              password:
-                migrationPassword
-            })
-        } catch (signUpError) {
-          // ------------------------------------------
-          // This can happen if migration was started
-          // previously but wasn't completed.
-          // ------------------------------------------
-
-          if (
-            signUpError?.name ===
-            'UsernameExistsException'
-          ) {
-            try {
-              const loginResult =
-                await cognitoSignIn({
-                  login:
-                    legacyUsername,
-
-                  password:
-                    migrationPassword
-                })
-
-              await linkExistingAccount(
-                loginResult
-                  .AuthenticationResult
-              )
-
-              return
-            } catch (
-              existingLoginError
-            ) {
-              if (
-                existingLoginError
-                  ?.name ===
-                'UserNotConfirmedException'
-              ) {
-                await cognitoResendCode(
-                  legacyUsername
-                )
-
-                setStep(
-                  'migrate-confirm'
-                )
-
-                setMessage(
-                  `A new confirmation code was sent to ${legacyEmail}.`
-                )
-
-                return
-              }
-
-              throw new Error(
-                'A Cognito account with this username already exists. If you previously started migration, enter the password you used for that migration.'
-              )
-            }
-          }
-
-          throw signUpError
-        }
-
-
-        // --------------------------------------------
-        // Cognito immediately confirmed
-        // --------------------------------------------
-
-        if (
-          signUpResult.UserConfirmed
-        ) {
-          const loginResult =
-            await cognitoSignIn({
-              login:
-                legacyUsername,
-
-              password:
-                migrationPassword
-            })
-
-          await linkExistingAccount(
-            loginResult
-              .AuthenticationResult
-          )
-
-          return
-        }
-
-
-        // --------------------------------------------
-        // Normal email-code confirmation
-        // --------------------------------------------
-
-        setStep(
-          'migrate-confirm'
-        )
-
-        setMessage(
-          `We sent a confirmation code to ${legacyEmail}.`
-        )
-      } catch (err) {
         console.error(
-          'Account migration error:',
+          'Cognito login error:',
           err
         )
 
         setError(
           err.message ||
-          'Could not start migration.'
-        )
-      } finally {
-        setLoading(false)
-      }
-    }
-
-
-  // ==================================================
-  // CONFIRM EXISTING ACCOUNT MIGRATION
-  // ==================================================
-
-  const handleMigrationConfirm =
-    async e => {
-      e.preventDefault()
-
-      setError('')
-      setMessage('')
-
-      if (!code.trim()) {
-        setError(
-          'Enter the confirmation code.'
-        )
-
-        return
-      }
-
-      setLoading(true)
-
-      try {
-        await cognitoConfirmSignUp({
-          username:
-            legacyUsername,
-
-          code:
-            code.trim()
-        })
-
-        const loginResult =
-          await cognitoSignIn({
-            login:
-              legacyUsername,
-
-            password:
-              migrationPassword
-          })
-
-        await linkExistingAccount(
-          loginResult
-            .AuthenticationResult
-        )
-      } catch (err) {
-        console.error(
-          'Migration confirmation error:',
-          err
-        )
-
-        setError(
-          err.message ||
-          'Could not complete migration.'
-        )
-      } finally {
-        setLoading(false)
-      }
-    }
-
-
-  // ==================================================
-  // RESEND MIGRATION CODE
-  // ==================================================
-
-  const handleMigrationResend =
-    async () => {
-      setError('')
-      setMessage('')
-      setLoading(true)
-
-      try {
-        await cognitoResendCode(
-          legacyUsername
-        )
-
-        setMessage(
-          'A new confirmation code was sent.'
-        )
-      } catch (err) {
-        setError(
-          err.message ||
-          'Could not resend code.'
+          'Incorrect email, username, or password.'
         )
       } finally {
         setLoading(false)
@@ -911,357 +501,31 @@ export default function AuthModal({
 
 
   const inputStyle = {
-    padding: '0.8rem',
-    borderRadius: '6px',
+    padding:
+      '0.8rem',
+
+    borderRadius:
+      '6px',
+
     border:
       '1px solid #333',
+
     background:
       '#1a1a1a',
-    color: '#fff',
-    width: '100%',
+
+    color:
+      '#fff',
+
+    width:
+      '100%',
+
     boxSizing:
       'border-box'
   }
 
 
   // ==================================================
-  // EXISTING ACCOUNT MIGRATION SCREEN
-  // ==================================================
-
-  if (
-    mode === 'login' &&
-    step === 'migrate'
-  ) {
-    return (
-      <div className="modal-overlay">
-        <div
-          className="modal"
-          style={{
-            maxWidth:
-              '400px'
-          }}
-        >
-          <button
-            className="close-btn"
-            onClick={onClose}
-          >
-            ×
-          </button>
-
-          <div
-            style={{
-              fontSize:
-                '2.5rem',
-              textAlign:
-                'center',
-              marginBottom:
-                '0.75rem'
-            }}
-          >
-            🎮
-          </div>
-
-          <h2
-            style={{
-              marginTop: 0,
-              textAlign:
-                'center'
-            }}
-          >
-            Migrate Your Account
-          </h2>
-
-          <p
-            style={{
-              color: '#aaa',
-              lineHeight: 1.6,
-              textAlign:
-                'center'
-            }}
-          >
-            We found your existing
-            NestPlay account{' '}
-
-            <strong
-              style={{
-                color: '#fff'
-              }}
-            >
-              @{legacyUsername}
-            </strong>
-
-            .
-          </p>
-
-          <p
-            style={{
-              color: '#aaa',
-              lineHeight: 1.6,
-              textAlign:
-                'center'
-            }}
-          >
-            This will move your login
-            to AWS Cognito while keeping
-            your existing profile,
-            posts, votes, friends and
-            messages.
-          </p>
-
-          <form
-            onSubmit={
-              handleMigrationStart
-            }
-            style={{
-              display: 'flex',
-              flexDirection:
-                'column',
-              gap: '1rem'
-            }}
-          >
-            <input
-              type="email"
-              value={
-                legacyEmail
-              }
-              disabled
-              style={{
-                ...inputStyle,
-                opacity: 0.7
-              }}
-            />
-
-            <input
-              type="password"
-              placeholder="Cognito password"
-              value={
-                migrationPassword
-              }
-              onChange={e =>
-                setMigrationPassword(
-                  e.target.value
-                )
-              }
-              required
-              style={
-                inputStyle
-              }
-            />
-
-            <div
-              style={{
-                color: '#888',
-                fontSize:
-                  '0.8rem',
-                lineHeight: 1.5
-              }}
-            >
-              You can keep your
-              existing password, or
-              choose a new one if
-              Cognito requires a
-              stronger password.
-            </div>
-
-            {message && (
-              <div
-                style={{
-                  color:
-                    '#7ee787',
-                  fontSize:
-                    '0.9rem',
-                  textAlign:
-                    'center'
-                }}
-              >
-                {message}
-              </div>
-            )}
-
-            {error && (
-              <div
-                style={{
-                  color:
-                    '#fc4646',
-                  fontSize:
-                    '0.9rem',
-                  textAlign:
-                    'center'
-                }}
-              >
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary"
-              style={{
-                padding:
-                  '0.8rem'
-              }}
-            >
-              {
-                loading
-                  ? 'Starting Migration...'
-                  : 'Migrate Account'
-              }
-            </button>
-          </form>
-        </div>
-      </div>
-    )
-  }
-
-
-  // ==================================================
-  // MIGRATION CONFIRMATION SCREEN
-  // ==================================================
-
-  if (
-    mode === 'login' &&
-    step ===
-      'migrate-confirm'
-  ) {
-    return (
-      <div className="modal-overlay">
-        <div
-          className="modal"
-          style={{
-            maxWidth:
-              '400px',
-            textAlign:
-              'center'
-          }}
-        >
-          <button
-            className="close-btn"
-            onClick={onClose}
-          >
-            ×
-          </button>
-
-          <div
-            style={{
-              fontSize:
-                '2.5rem',
-              marginBottom:
-                '1rem'
-            }}
-          >
-            📬
-          </div>
-
-          <h2>
-            Confirm Migration
-          </h2>
-
-          <p
-            style={{
-              color: '#aaa',
-              lineHeight: 1.6
-            }}
-          >
-            Enter the code sent to{' '}
-
-            <strong
-              style={{
-                color: '#fff'
-              }}
-            >
-              {legacyEmail}
-            </strong>
-          </p>
-
-          <form
-            onSubmit={
-              handleMigrationConfirm
-            }
-            style={{
-              display: 'flex',
-              flexDirection:
-                'column',
-              gap: '1rem'
-            }}
-          >
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="Confirmation code"
-              value={code}
-              onChange={e =>
-                setCode(
-                  e.target.value
-                )
-              }
-              required
-              style={
-                inputStyle
-              }
-            />
-
-            {message && (
-              <div
-                style={{
-                  color:
-                    '#7ee787',
-                  fontSize:
-                    '0.9rem'
-                }}
-              >
-                {message}
-              </div>
-            )}
-
-            {error && (
-              <div
-                style={{
-                  color:
-                    '#fc4646',
-                  fontSize:
-                    '0.9rem'
-                }}
-              >
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary"
-              style={{
-                padding:
-                  '0.8rem'
-              }}
-            >
-              {
-                loading
-                  ? 'Migrating...'
-                  : 'Finish Migration'
-              }
-            </button>
-
-            <button
-              type="button"
-              disabled={loading}
-              className="btn-ghost"
-              onClick={
-                handleMigrationResend
-              }
-            >
-              Resend Code
-            </button>
-          </form>
-        </div>
-      </div>
-    )
-  }
-
-
-  // ==================================================
-  // NEW ACCOUNT CONFIRMATION
+  // NEW ACCOUNT CONFIRMATION SCREEN
   // ==================================================
 
   if (
@@ -1275,6 +539,7 @@ export default function AuthModal({
           style={{
             maxWidth:
               '400px',
+
             textAlign:
               'center'
           }}
@@ -1290,6 +555,7 @@ export default function AuthModal({
             style={{
               fontSize:
                 '2.5rem',
+
               marginBottom:
                 '1rem'
             }}
@@ -1303,8 +569,11 @@ export default function AuthModal({
 
           <p
             style={{
-              color: '#aaa',
-              lineHeight: 1.6
+              color:
+                '#aaa',
+
+              lineHeight:
+                1.6
             }}
           >
             Enter the confirmation
@@ -1312,7 +581,8 @@ export default function AuthModal({
 
             <strong
               style={{
-                color: '#fff'
+                color:
+                  '#fff'
               }}
             >
               {email}
@@ -1324,10 +594,14 @@ export default function AuthModal({
               handleNewConfirm
             }
             style={{
-              display: 'flex',
+              display:
+                'flex',
+
               flexDirection:
                 'column',
-              gap: '1rem'
+
+              gap:
+                '1rem'
             }}
           >
             <input
@@ -1351,6 +625,7 @@ export default function AuthModal({
                 style={{
                   color:
                     '#7ee787',
+
                   fontSize:
                     '0.9rem'
                 }}
@@ -1364,6 +639,7 @@ export default function AuthModal({
                 style={{
                   color:
                     '#fc4646',
+
                   fontSize:
                     '0.9rem'
                 }}
@@ -1414,7 +690,8 @@ export default function AuthModal({
       <div
         className="modal"
         style={{
-          maxWidth: '400px'
+          maxWidth:
+            '400px'
         }}
       >
         <button
@@ -1426,7 +703,9 @@ export default function AuthModal({
 
         <h2
           style={{
-            marginTop: 0,
+            marginTop:
+              0,
+
             marginBottom:
               '1.5rem'
           }}
@@ -1444,10 +723,14 @@ export default function AuthModal({
               handleSignUp
             }
             style={{
-              display: 'flex',
+              display:
+                'flex',
+
               flexDirection:
                 'column',
-              gap: '1rem'
+
+              gap:
+                '1rem'
             }}
           >
             <input
@@ -1495,13 +778,32 @@ export default function AuthModal({
               }
             />
 
+            {message && (
+              <div
+                style={{
+                  color:
+                    '#7ee787',
+
+                  fontSize:
+                    '0.9rem',
+
+                  textAlign:
+                    'center'
+                }}
+              >
+                {message}
+              </div>
+            )}
+
             {error && (
               <div
                 style={{
                   color:
                     '#fc4646',
+
                   fontSize:
                     '0.9rem',
+
                   textAlign:
                     'center'
                 }}
@@ -1517,6 +819,7 @@ export default function AuthModal({
               style={{
                 marginTop:
                   '0.5rem',
+
                 padding:
                   '0.8rem'
               }}
@@ -1534,10 +837,14 @@ export default function AuthModal({
               handleLogin
             }
             style={{
-              display: 'flex',
+              display:
+                'flex',
+
               flexDirection:
                 'column',
-              gap: '1rem'
+
+              gap:
+                '1rem'
             }}
           >
             <input
@@ -1570,13 +877,32 @@ export default function AuthModal({
               }
             />
 
+            {message && (
+              <div
+                style={{
+                  color:
+                    '#7ee787',
+
+                  fontSize:
+                    '0.9rem',
+
+                  textAlign:
+                    'center'
+                }}
+              >
+                {message}
+              </div>
+            )}
+
             {error && (
               <div
                 style={{
                   color:
                     '#fc4646',
+
                   fontSize:
                     '0.9rem',
+
                   textAlign:
                     'center'
                 }}
@@ -1592,6 +918,7 @@ export default function AuthModal({
               style={{
                 marginTop:
                   '0.5rem',
+
                 padding:
                   '0.8rem'
               }}
