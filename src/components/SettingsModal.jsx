@@ -22,6 +22,8 @@ import {
   deleteAvatar
 } from '../api'
 
+import useEscapeKey from '../hooks/useEscapeKey'
+
 
 const AVATAR_COLORS = [
   {
@@ -68,6 +70,7 @@ export default function SettingsModal({
   session,
   onAvatarChange
 }) {
+  useEscapeKey(onClose)
   const [
     activePanel,
     setActivePanel

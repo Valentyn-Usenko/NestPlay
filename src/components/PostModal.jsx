@@ -15,6 +15,8 @@ import {
   API_BASE_URL
 } from '../config'
 
+import useEscapeKey from '../hooks/useEscapeKey'
+
 
 export default function PostModal({
   session,
@@ -255,6 +257,7 @@ export default function PostModal({
       'border-color 0.2s'
   }
 
+  useEscapeKey(onClose)
 
   const labelStyle = {
     display:

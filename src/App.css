@@ -112,10 +112,22 @@ main { width: 100%; }
   border-bottom: 1px solid #333;
 }
 
+html:has(.modal-overlay),
+body:has(.modal-overlay) {
+  overflow: hidden;
+}
+
 .modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.65);
-  display: flex; justify-content: center; align-items: center;
+  position: fixed;
+  inset: 0;
+
+  background: rgba(0, 0, 0, 0.65);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  overscroll-behavior: contain;
 }
 
 .modal {
@@ -1107,7 +1119,7 @@ main { width: 100%; }
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.85rem;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: none;
 }
 
 .upvote-btn:hover:not(:disabled) {

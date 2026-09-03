@@ -1,36 +1,64 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, {
+  useEffect,
+  useState,
+  useRef
+} from 'react'
+
 import {
   getMessages,
   sendMessage,
   markMessagesRead
 } from '../api'
 
+import useEscapeKey from '../hooks/useEscapeKey'
+
+
 const AVATAR_MAP = {
-  purple: 'linear-gradient(135deg, #646cff, #a78bfa)',
-  red: 'linear-gradient(135deg, #fc4646, #ff8c00)',
-  green: 'linear-gradient(135deg, #11998e, #38ef7d)',
-  blue: 'linear-gradient(135deg, #2193b0, #6dd5ed)',
-  pink: 'linear-gradient(135deg, #f953c6, #b91d73)',
-  gold: 'linear-gradient(135deg, #f7971e, #ffd200)'
+  purple:
+    'linear-gradient(135deg, #646cff, #a78bfa)',
+
+  red:
+    'linear-gradient(135deg, #fc4646, #ff8c00)',
+
+  green:
+    'linear-gradient(135deg, #11998e, #38ef7d)',
+
+  blue:
+    'linear-gradient(135deg, #2193b0, #6dd5ed)',
+
+  pink:
+    'linear-gradient(135deg, #f953c6, #b91d73)',
+
+  gold:
+    'linear-gradient(135deg, #f7971e, #ffd200)'
 }
+
 
 const formatTime = ts =>
   new Date(ts).toLocaleTimeString(
     'en-US',
     {
-      hour: '2-digit',
-      minute: '2-digit'
+      hour:
+        '2-digit',
+
+      minute:
+        '2-digit'
     }
   )
+
 
 const formatDate = ts =>
   new Date(ts).toLocaleDateString(
     'en-US',
     {
-      month: 'short',
-      day: 'numeric'
+      month:
+        'short',
+
+      day:
+        'numeric'
     }
   )
+
 
 function groupMessages(messages) {
   const grouped = []
@@ -39,20 +67,33 @@ function groupMessages(messages) {
 
   for (const msg of messages) {
     const msgDate =
-      formatDate(msg.created_at)
+      formatDate(
+        msg.created_at
+      )
 
-    if (msgDate !== lastDate) {
+    if (
+      msgDate !==
+      lastDate
+    ) {
       grouped.push({
-        type: 'divider',
-        date: msgDate,
-        id: `divider-${msg.id}`
+        type:
+          'divider',
+
+        date:
+          msgDate,
+
+        id:
+          `divider-${msg.id}`
       })
 
-      lastDate = msgDate
+      lastDate =
+        msgDate
     }
 
     grouped.push({
-      type: 'message',
+      type:
+        'message',
+
       msg
     })
   }
@@ -60,25 +101,39 @@ function groupMessages(messages) {
   return grouped
 }
 
+
 export default function ChatModal({
   session,
   friend,
   onClose
 }) {
-  const [messages, setMessages] =
-    useState([])
+  useEscapeKey(onClose)
+  
+  const [
+    messages,
+    setMessages
+  ] = useState([])
 
-  const [text, setText] =
-    useState('')
+  const [
+    text,
+    setText
+  ] = useState('')
 
-  const [sending, setSending] =
-    useState(false)
+  const [
+    sending,
+    setSending
+  ] = useState(false)
 
-  const [loading, setLoading] =
-    useState(true)
+  const [
+    loading,
+    setLoading
+  ] = useState(true)
 
-  const bottomRef = useRef()
-  const mountedRef = useRef(true)
+  const bottomRef =
+    useRef()
+
+  const mountedRef =
+    useRef(true)
 
   const myId =
     session.user.id
@@ -97,12 +152,47 @@ export default function ChatModal({
         'purple'
     ]
 
+
+  // ------------------------------------------------
+  // LOCK BACKGROUND SCROLL WHILE CHAT IS OPEN
+  // ------------------------------------------------
+
+  useEffect(() => {
+    const previousBodyOverflow =
+      document.body.style.overflow
+
+    const previousHtmlOverflow =
+      document.documentElement
+        .style
+        .overflow
+
+    document.body.style.overflow =
+      'hidden'
+
+    document.documentElement
+      .style
+      .overflow =
+      'hidden'
+
+    return () => {
+      document.body.style.overflow =
+        previousBodyOverflow
+
+      document.documentElement
+        .style
+        .overflow =
+        previousHtmlOverflow
+    }
+  }, [])
+
+
   // ------------------------------------------------
   // LOAD + POLL MESSAGES FROM AWS
   // ------------------------------------------------
 
   useEffect(() => {
-    mountedRef.current = true
+    mountedRef.current =
+      true
 
     async function loadMessages(
       showLoading = false
@@ -120,7 +210,9 @@ export default function ChatModal({
         if (
           mountedRef.current
         ) {
-          setMessages(data || [])
+          setMessages(
+            data || []
+          )
         }
 
         // Mark messages from this friend as read
@@ -147,18 +239,23 @@ export default function ChatModal({
 
     // Poll AWS every 2 seconds
     const poll =
-      setInterval(() => {
-        loadMessages(false)
-      }, 2000)
+      setInterval(
+        () => {
+          loadMessages(false)
+        },
+        2000
+      )
 
     return () => {
-      mountedRef.current = false
+      mountedRef.current =
+        false
 
       clearInterval(
         poll
       )
     }
   }, [friend.id])
+
 
   // ------------------------------------------------
   // SCROLL TO BOTTOM
@@ -167,110 +264,136 @@ export default function ChatModal({
   useEffect(() => {
     bottomRef.current
       ?.scrollIntoView({
-        behavior: 'smooth'
+        behavior:
+          'smooth'
       })
   }, [messages])
+
 
   // ------------------------------------------------
   // SEND MESSAGE TO AWS
   // ------------------------------------------------
 
-  const handleSend = async () => {
-    if (
-      !text.trim() ||
-      sending
-    ) {
-      return
-    }
+  const handleSend =
+    async () => {
+      if (
+        !text.trim() ||
+        sending
+      ) {
+        return
+      }
 
-    const content =
-      text.trim()
+      const content =
+        text.trim()
 
-    setSending(true)
-    setText('')
+      setSending(true)
 
-    // Show message immediately
-    const tempId =
-      `temp-${Date.now()}`
+      setText('')
 
-    const optimistic = {
-      id: tempId,
-      sender_id: myId,
-      receiver_id:
-        friend.id,
-      content,
-      created_at:
-        new Date().toISOString(),
-      read: false
-    }
+      // Show message immediately
+      const tempId =
+        `temp-${Date.now()}`
 
-    setMessages(prev => [
-      ...prev,
-      optimistic
-    ])
+      const optimistic = {
+        id:
+          tempId,
 
-    try {
-      const savedMessage =
-        await sendMessage(
+        sender_id:
+          myId,
+
+        receiver_id:
           friend.id,
-          content
-        )
 
-      if (
-        mountedRef.current
-      ) {
-        setMessages(prev =>
-          prev.map(message =>
-            message.id === tempId
-              ? savedMessage
-              : message
-          )
-        )
-      }
-    } catch (error) {
-      console.error(
-        'Error sending AWS message:',
-        error
-      )
+        content,
 
-      if (
-        mountedRef.current
-      ) {
-        // Remove failed optimistic message
-        setMessages(prev =>
-          prev.filter(
-            message =>
-              message.id !==
-              tempId
-          )
-        )
+        created_at:
+          new Date()
+            .toISOString(),
 
-        // Put the text back
-        setText(content)
+        read:
+          false
       }
 
-      alert(
-        'Could not send message: ' +
-        error.message
+      setMessages(
+        prev => [
+          ...prev,
+          optimistic
+        ]
       )
-    } finally {
-      if (
-        mountedRef.current
-      ) {
-        setSending(false)
+
+      try {
+        const savedMessage =
+          await sendMessage(
+            friend.id,
+            content
+          )
+
+        if (
+          mountedRef.current
+        ) {
+          setMessages(
+            prev =>
+              prev.map(
+                message =>
+                  message.id ===
+                  tempId
+                    ? savedMessage
+                    : message
+              )
+          )
+        }
+      } catch (error) {
+        console.error(
+          'Error sending AWS message:',
+          error
+        )
+
+        if (
+          mountedRef.current
+        ) {
+          // Remove failed optimistic message
+          setMessages(
+            prev =>
+              prev.filter(
+                message =>
+                  message.id !==
+                  tempId
+              )
+          )
+
+          // Put the text back
+          setText(
+            content
+          )
+        }
+
+        alert(
+          'Could not send message: ' +
+          error.message
+        )
+      } finally {
+        if (
+          mountedRef.current
+        ) {
+          setSending(false)
+        }
       }
     }
-  }
+
 
   const grouped =
-    groupMessages(messages)
+    groupMessages(
+      messages
+    )
+
 
   return (
     <div className="modal-overlay">
       <div
         className="modal chat-modal"
-        onClick={e =>
-          e.stopPropagation()
+        onClick={
+          e =>
+            e.stopPropagation()
         }
       >
         <div className="chat-header">
@@ -296,18 +419,23 @@ export default function ChatModal({
             )}
 
             <span className="chat-friend-name">
-              {friend.username ||
-                'Unknown'}
+              {
+                friend.username ||
+                'Unknown'
+              }
             </span>
           </div>
 
           <button
             className="close-btn"
-            onClick={onClose}
+            onClick={
+              onClose
+            }
           >
             ✕
           </button>
         </div>
+
 
         <div className="chat-messages">
           {loading && (
@@ -319,11 +447,13 @@ export default function ChatModal({
           )}
 
           {!loading &&
-            grouped.length === 0 && (
+            grouped.length ===
+              0 && (
               <div className="chat-empty">
                 <span
                   style={{
-                    fontSize: '2rem'
+                    fontSize:
+                      '2rem'
                   }}
                 >
                   💬
@@ -336,84 +466,107 @@ export default function ChatModal({
             )}
 
           {!loading &&
-            grouped.map(item => {
-              if (
-                item.type ===
-                'divider'
-              ) {
+            grouped.map(
+              item => {
+                if (
+                  item.type ===
+                  'divider'
+                ) {
+                  return (
+                    <div
+                      key={
+                        item.id
+                      }
+                      className="chat-date-divider"
+                    >
+                      {
+                        item.date
+                      }
+                    </div>
+                  )
+                }
+
+                const {
+                  msg
+                } = item
+
+                const mine =
+                  msg.sender_id ===
+                  myId
+
                 return (
                   <div
-                    key={item.id}
-                    className="chat-date-divider"
-                  >
-                    {item.date}
-                  </div>
-                )
-              }
-
-              const { msg } =
-                item
-
-              const mine =
-                msg.sender_id ===
-                myId
-
-              return (
-                <div
-                  key={msg.id}
-                  className={
-                    `chat-bubble-row ${
-                      mine
-                        ? 'mine'
-                        : 'theirs'
-                    }`
-                  }
-                >
-                  <div
+                    key={
+                      msg.id
+                    }
                     className={
-                      `chat-bubble ${
+                      `chat-bubble-row ${
                         mine
-                          ? 'bubble-mine'
-                          : 'bubble-theirs'
+                          ? 'mine'
+                          : 'theirs'
                       }`
                     }
                   >
-                    <span className="chat-bubble-text">
-                      {msg.content}
-                    </span>
+                    <div
+                      className={
+                        `chat-bubble ${
+                          mine
+                            ? 'bubble-mine'
+                            : 'bubble-theirs'
+                        }`
+                      }
+                    >
+                      <span className="chat-bubble-text">
+                        {
+                          msg.content
+                        }
+                      </span>
 
-                    <span className="chat-bubble-time">
-                      {formatTime(
-                        msg.created_at
-                      )}
-                    </span>
+                      <span className="chat-bubble-time">
+                        {
+                          formatTime(
+                            msg.created_at
+                          )
+                        }
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              }
+            )}
 
-          <div ref={bottomRef} />
+          <div
+            ref={
+              bottomRef
+            }
+          />
         </div>
+
 
         <div className="chat-input-row">
           <input
             className="chat-input"
             placeholder="Type a message…"
-            value={text}
-            onChange={e =>
-              setText(
-                e.target.value
-              )
+            value={
+              text
             }
-            onKeyDown={e => {
-              if (
-                e.key ===
-                  'Enter' &&
-                !e.shiftKey
-              ) {
-                handleSend()
+            onChange={
+              e =>
+                setText(
+                  e.target.value
+                )
+            }
+            onKeyDown={
+              e => {
+                if (
+                  e.key ===
+                    'Enter' &&
+                  !e.shiftKey
+                ) {
+                  handleSend()
+                }
               }
-            }}
+            }
           />
 
           <button

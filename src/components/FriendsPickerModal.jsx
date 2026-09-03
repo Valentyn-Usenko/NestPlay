@@ -6,6 +6,8 @@ import {
 } from '../api'
 import ChatModal from './ChatModal'
 
+import useEscapeKey from '../hooks/useEscapeKey'
+
 const AVATAR_MAP = {
   purple: 'linear-gradient(135deg, #646cff, #a78bfa)',
   red: 'linear-gradient(135deg, #fc4646, #ff8c00)',
@@ -19,6 +21,7 @@ export default function FriendsPickerModal({
   session,
   onClose
 }) {
+  useEscapeKey(onClose)
   const [friends, setFriends] = useState([])
   const [unreadMap, setUnreadMap] = useState({})
   const [loading, setLoading] = useState(true)

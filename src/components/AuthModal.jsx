@@ -18,12 +18,16 @@ import {
   clearCognitoTokens
 } from '../authSession'
 
+import useEscapeKey from '../hooks/useEscapeKey'
+
 
 export default function AuthModal({
   mode,
   onClose,
   onAuthSuccess
 }) {
+  useEscapeKey(onClose)
+  
   const [email, setEmail] =
     useState('')
 

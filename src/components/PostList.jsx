@@ -75,44 +75,198 @@ useEffect(() => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [sortBy, session])
 
-  const handleVote = async (
-    e,
-    post,
+const handleVote = async (
+  e,
+  post,
+  voteType
+) => {
+  e.stopPropagation()
+
+  if (
+    !uid ||
+    votingId === post.id
+  ) {
+    return
+  }
+
+  const previousPost = {
+    ...post
+  }
+
+  const currentVote =
+    post.myVote || null
+
+  const currentUpvotes =
+    getUpvoteCount(post)
+
+  const currentDownvotes =
+    getDownvoteCount(post)
+
+  let optimisticVote =
     voteType
-  ) => {
-    e.stopPropagation()
+
+  let optimisticUpvotes =
+    currentUpvotes
+
+  let optimisticDownvotes =
+    currentDownvotes
+
+
+  // Clicking the same vote again removes it.
+  if (
+    currentVote === voteType
+  ) {
+    optimisticVote =
+      null
 
     if (
-      !uid ||
-      votingId === post.id
+      voteType === 'up'
     ) {
-      return
+      optimisticUpvotes =
+        Math.max(
+          0,
+          currentUpvotes - 1
+        )
+    } else {
+      optimisticDownvotes =
+        Math.max(
+          0,
+          currentDownvotes - 1
+        )
     }
+  }
 
-    setVotingId(post.id)
+  // Switching from upvote to downvote.
+  else if (
+    currentVote === 'up' &&
+    voteType === 'down'
+  ) {
+    optimisticUpvotes =
+      Math.max(
+        0,
+        currentUpvotes - 1
+      )
 
-    try {
+    optimisticDownvotes =
+      currentDownvotes + 1
+  }
+
+  // Switching from downvote to upvote.
+  else if (
+    currentVote === 'down' &&
+    voteType === 'up'
+  ) {
+    optimisticDownvotes =
+      Math.max(
+        0,
+        currentDownvotes - 1
+      )
+
+    optimisticUpvotes =
+      currentUpvotes + 1
+  }
+
+  // Brand-new vote.
+  else if (
+    voteType === 'up'
+  ) {
+    optimisticUpvotes =
+      currentUpvotes + 1
+  }
+
+  else {
+    optimisticDownvotes =
+      currentDownvotes + 1
+  }
+
+
+  // ----------------------------------------------
+  // UPDATE UI IMMEDIATELY
+  // ----------------------------------------------
+
+  setPosts(prev =>
+    prev.map(item =>
+      item.id === post.id
+        ? {
+            ...item,
+
+            myVote:
+              optimisticVote,
+
+            liveUpvotes:
+              optimisticUpvotes,
+
+            liveDownvotes:
+              optimisticDownvotes
+          }
+        : item
+    )
+  )
+
+  setVotingId(
+    post.id
+  )
+
+
+  try {
+    const result =
       await voteOnPost(
         post.id,
         voteType
       )
 
-      // Refresh without hiding the feed.
-      await fetchPosts(false)
-    } catch (error) {
-      console.error(
-        'Vote failed:',
-        error
-      )
 
-      alert(
-        'Error voting: ' +
-        error.message
+    // ----------------------------------------------
+    // SYNC WITH EXACT SERVER RESULT
+    // ----------------------------------------------
+
+    setPosts(prev =>
+      prev.map(item =>
+        item.id === post.id
+          ? {
+              ...item,
+
+              myVote:
+                result.vote,
+
+              liveUpvotes:
+                result.liveUpvotes,
+
+              liveDownvotes:
+                result.liveDownvotes
+            }
+          : item
       )
-    } finally {
-      setVotingId(null)
-    }
+    )
+  } catch (error) {
+    console.error(
+      'Vote failed:',
+      error
+    )
+
+
+    // ----------------------------------------------
+    // ROLLBACK IF SERVER FAILED
+    // ----------------------------------------------
+
+    setPosts(prev =>
+      prev.map(item =>
+        item.id === post.id
+          ? previousPost
+          : item
+      )
+    )
+
+    alert(
+      'Error voting: ' +
+      error.message
+    )
+  } finally {
+    setVotingId(
+      null
+    )
   }
+}
 
   if (loading) {
     return (

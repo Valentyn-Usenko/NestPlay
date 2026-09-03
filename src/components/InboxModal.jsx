@@ -8,6 +8,8 @@ import {
   getProfiles
 } from '../api'
 
+import useEscapeKey from '../hooks/useEscapeKey'
+
 const AVATAR_COLORS = {
   purple: 'linear-gradient(135deg, #646cff, #a78bfa)',
   red: 'linear-gradient(135deg, #fc4646, #ff8c00)',
@@ -49,6 +51,8 @@ export default function InboxModal({
   onOpenPost,
   onNotificationsRead
 }) {
+  useEscapeKey(onClose)
+  
   const [tab, setTab] =
     useState('requests')
 
