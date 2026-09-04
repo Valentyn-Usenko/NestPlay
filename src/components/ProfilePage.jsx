@@ -57,6 +57,17 @@ export default function ProfilePage({
   const [friends, setFriends] = useState([])
   const [loading, setLoading] = useState(true)
 
+  const [showAllPosts, setShowAllPosts] =
+    useState(false)
+
+  const [
+    showAllLikedPosts,
+    setShowAllLikedPosts
+  ] = useState(false)
+
+  const [showAllFriends, setShowAllFriends] =
+    useState(false)
+
   const [username, setUsername] =
     useState(
       session?.user?.user_metadata?.username ||
@@ -674,8 +685,7 @@ export default function ProfilePage({
         )}
 
         {!loading &&
-          friends.length ===
-            0 && (
+          friends.length === 0 && (
             <div className="profile-empty">
               <span
                 style={{
@@ -694,96 +704,107 @@ export default function ProfilePage({
           )}
 
         <div className="friends-grid">
-          {friends.map(
-            friend => {
-              const letter =
-                (
-                  friend.username ||
-                  '?'
-                )
-                  .charAt(0)
-                  .toUpperCase()
+          {(showAllFriends
+            ? friends
+            : friends.slice(0, 3)
+          ).map(friend => {
+            const letter =
+              (friend.username || '?')
+                .charAt(0)
+                .toUpperCase()
 
-              const gradient =
-                AVATAR_MAP[
-                  friend.avatar_color ||
-                  'purple'
-                ]
+            const gradient =
+              AVATAR_MAP[
+                friend.avatar_color ||
+                'purple'
+              ]
 
-              return (
+            return (
+              <div
+                key={friend.id}
+                className="friend-card"
+              >
                 <div
-                  key={
-                    friend.id
+                  className="friend-card-left"
+                  onClick={() =>
+                    onOpenProfile?.(
+                      friend.id
+                    )
                   }
-                  className="friend-card"
+                  style={{
+                    cursor:
+                      'pointer'
+                  }}
                 >
-                  <div
-                    className="friend-card-left"
+                  {friend.avatar_url ? (
+                    <img
+                      src={
+                        friend.avatar_url
+                      }
+                      alt="avatar"
+                      className="friend-avatar"
+                    />
+                  ) : (
+                    <div
+                      className="friend-avatar"
+                      style={{
+                        background:
+                          gradient
+                      }}
+                    >
+                      {letter}
+                    </div>
+                  )}
+
+                  <span className="friend-name">
+                    {friend.username ||
+                      'Unknown'}
+                  </span>
+                </div>
+
+                <div className="friend-card-actions">
+                  <button
+                    className="friend-msg-btn"
                     onClick={() =>
-                      onOpenProfile?.(
+                      setChatFriend(
+                        friend
+                      )
+                    }
+                  >
+                    💬
+                  </button>
+
+                  <button
+                    className="friend-remove-btn"
+                    onClick={() =>
+                      handleRemoveFriend(
+                        friend.requestId,
                         friend.id
                       )
                     }
-                    style={{
-                      cursor:
-                        'pointer'
-                    }}
                   >
-                    {friend.avatar_url ? (
-                      <img
-                        src={
-                          friend.avatar_url
-                        }
-                        alt="avatar"
-                        className="friend-avatar"
-                      />
-                    ) : (
-                      <div
-                        className="friend-avatar"
-                        style={{
-                          background:
-                            gradient
-                        }}
-                      >
-                        {letter}
-                      </div>
-                    )}
-
-                    <span className="friend-name">
-                      {friend.username ||
-                        'Unknown'}
-                    </span>
-                  </div>
-
-                  <div className="friend-card-actions">
-                    <button
-                      className="friend-msg-btn"
-                      onClick={() =>
-                        setChatFriend(
-                          friend
-                        )
-                      }
-                    >
-                      💬
-                    </button>
-
-                    <button
-                      className="friend-remove-btn"
-                      onClick={() =>
-                        handleRemoveFriend(
-                          friend.requestId,
-                          friend.id
-                        )
-                      }
-                    >
-                      Remove
-                    </button>
-                  </div>
+                    Remove
+                  </button>
                 </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {friends.length > 3 && (
+          <button
+            className="profile-expand-btn"
+            onClick={() =>
+              setShowAllFriends(
+                prev => !prev
               )
             }
-          )}
-        </div>
+          >
+            {showAllFriends
+              ? 'Show less'
+              : `Show all ${friends.length} friends`}
+          </button>
+        )}
       </div>
 
       <div className="profile-posts-section">
@@ -800,8 +821,7 @@ export default function ProfilePage({
         )}
 
         {!loading &&
-          posts.length ===
-            0 && (
+          posts.length === 0 && (
             <div className="profile-empty">
               <span
                 style={{
@@ -820,41 +840,53 @@ export default function ProfilePage({
           )}
 
         <ul className="posts">
-          {posts.map(
-            post => (
-              <li
-                key={
-                  post.id
-                }
-                className="post-card profile-post-card"
-              >
-                <div className="profile-post-top">
-                  <h3 className="profile-post-title">
-                    {post.title}
-                  </h3>
+          {(showAllPosts
+            ? posts
+            : posts.slice(0, 3)
+          ).map(post => (
+            <li
+              key={post.id}
+              className="post-card profile-post-card"
+            >
+              <div className="profile-post-top">
+                <h3 className="profile-post-title">
+                  {post.title}
+                </h3>
 
-                  <span className="profile-post-upvotes">
-                    ▲{' '}
-                    {post.liveUpvotes}
-                  </span>
+                <span className="profile-post-upvotes">
+                  ▲ {post.liveUpvotes}
+                </span>
+              </div>
+
+              {post.game_name && (
+                <div className="profile-post-game">
+                  🎮 {post.game_name}
                 </div>
+              )}
 
-                {post.game_name && (
-                  <div className="profile-post-game">
-                    🎮{' '}
-                    {post.game_name}
-                  </div>
-                )}
-
-                <div className="post-meta">
-                  {new Date(
-                    post.created_at
-                  ).toLocaleString()}
-                </div>
-              </li>
-            )
-          )}
+              <div className="post-meta">
+                {new Date(
+                  post.created_at
+                ).toLocaleString()}
+              </div>
+            </li>
+          ))}
         </ul>
+
+        {posts.length > 3 && (
+          <button
+            className="profile-expand-btn"
+            onClick={() =>
+              setShowAllPosts(
+                prev => !prev
+              )
+            }
+          >
+            {showAllPosts
+              ? 'Show less'
+              : `Show all ${posts.length} posts`}
+          </button>
+        )}
       </div>
 
       <div className="profile-posts-section">
@@ -871,8 +903,7 @@ export default function ProfilePage({
         )}
 
         {!loading &&
-          likedPosts.length ===
-            0 && (
+          likedPosts.length === 0 && (
             <div className="profile-empty">
               <span
                 style={{
@@ -891,43 +922,54 @@ export default function ProfilePage({
           )}
 
         <ul className="posts">
-          {likedPosts.map(
-            post => (
-              <li
-                key={
-                  post.id
-                }
-                className="post-card profile-post-card"
-              >
-                <div className="profile-post-top">
-                  <h3 className="profile-post-title">
-                    {post.title}
-                  </h3>
+          {(showAllLikedPosts
+            ? likedPosts
+            : likedPosts.slice(0, 3)
+          ).map(post => (
+            <li
+              key={post.id}
+              className="post-card profile-post-card"
+            >
+              <div className="profile-post-top">
+                <h3 className="profile-post-title">
+                  {post.title}
+                </h3>
 
-                  <span className="profile-post-upvotes">
-                    ▲{' '}
-                    {post.liveUpvotes}
-                  </span>
+                <span className="profile-post-upvotes">
+                  ▲ {post.liveUpvotes}
+                </span>
+              </div>
+
+              {post.game_name && (
+                <div className="profile-post-game">
+                  🎮 {post.game_name}
                 </div>
+              )}
 
-                {post.game_name && (
-                  <div className="profile-post-game">
-                    🎮{' '}
-                    {post.game_name}
-                  </div>
-                )}
-
-                <div className="post-meta">
-                  By {post.name}
-                  {' '}•{' '}
-                  {new Date(
-                    post.created_at
-                  ).toLocaleString()}
-                </div>
-              </li>
-            )
-          )}
+              <div className="post-meta">
+                By {post.name} •{' '}
+                {new Date(
+                  post.created_at
+                ).toLocaleString()}
+              </div>
+            </li>
+          ))}
         </ul>
+
+        {likedPosts.length > 3 && (
+          <button
+            className="profile-expand-btn"
+            onClick={() =>
+              setShowAllLikedPosts(
+                prev => !prev
+              )
+            }
+          >
+            {showAllLikedPosts
+              ? 'Show less'
+              : `Show all ${likedPosts.length} liked posts`}
+          </button>
+        )}
       </div>
 
       <button

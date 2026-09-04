@@ -419,7 +419,7 @@ export default function InboxModal({
   return (
     <div
       className="modal-overlay"
-      onClick={onClose}
+  
     >
       <div
         className="modal inbox-modal"

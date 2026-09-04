@@ -1065,7 +1065,6 @@ export default function SettingsModal({
   return (
     <div
       className="modal-overlay"
-      onClick={onClose}
     >
       <div
         className="modal settings-modal"

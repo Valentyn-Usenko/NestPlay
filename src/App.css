@@ -1138,3 +1138,25 @@ body:has(.modal-overlay) {
   cursor: default;
   opacity: 0.5;
 }
+
+
+.profile-expand-btn {
+  display: block;
+  margin: 0.8rem auto 0;
+  padding: 0.5rem 1rem;
+
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 7px;
+
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.85rem;
+
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.profile-expand-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
