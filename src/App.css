@@ -2098,3 +2098,13 @@ main {
     width: 100%;
   }
 }
+
+/* Space above the delete-post section */
+.post-page .danger-zone {
+  margin-top: 1.25rem;
+}
+
+/* Space between confirmation text and Delete button */
+.post-page .danger-zone > button {
+  margin-left: 1rem;
+}

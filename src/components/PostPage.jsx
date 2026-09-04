@@ -728,12 +728,11 @@ export default function PostPage({
           />
 
 
-          <button
-            onClick={addComment}
-          >
-            Add comment
-          </button>
-
+          {commentText.trim() && (
+            <button onClick={addComment}>
+              Add comment
+            </button>
+          )}
         </div>
 
       </div>
