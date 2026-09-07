@@ -390,6 +390,15 @@ const handleVote = async (
               {post.title}
             </h3>
 
+            {post.game_art_url && (
+              <img
+                src={post.game_art_url}
+                alt={post.game_name || 'Game'}
+                className="post-game-image"
+                loading="lazy"
+              />
+            )}
+
             <div
               style={{
                 display: 'flex',

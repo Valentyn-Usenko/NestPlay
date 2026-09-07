@@ -2108,3 +2108,13 @@ main {
 .post-page .danger-zone > button {
   margin-left: 1rem;
 }
+
+.post-game-image {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
