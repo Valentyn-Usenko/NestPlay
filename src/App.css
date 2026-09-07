@@ -48,6 +48,8 @@ html {
 }
 
 body {
+  position: relative;
+  isolation: isolate;
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
@@ -68,6 +70,82 @@ body {
     sans-serif;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Soft ambient glow beneath the hexagons */
+body::before {
+  content: "";
+  position: fixed;
+  top: 20px;
+  left: -100px;
+  width: 700px;
+  height: 500px;
+
+  pointer-events: none;
+  z-index: 0;
+
+  background: radial-gradient(
+    ellipse at 30% 20%,
+    rgba(255, 90, 54, 0.13) 0%,
+    rgba(255, 90, 54, 0.065) 34%,
+    transparent 70%
+  );
+
+  filter: blur(25px);
+}
+
+
+/* Real honeycomb hexagon layer */
+body::after {
+  content: "";
+  position: fixed;
+
+  top: 64px;
+  left: 0;
+
+  width: min(650px, 75vw);
+  height: 460px;
+
+  pointer-events: none;
+  z-index: 0;
+
+  background-image: url("./assets/hexagon-accent.svg");
+  background-repeat: no-repeat;
+  background-position: top left;
+  background-size: 100% auto;
+
+  opacity: 0.82;
+
+  -webkit-mask-image: radial-gradient(
+    ellipse 95% 90% at 0% 0%,
+    #000 0%,
+    #000 28%,
+    rgba(0, 0, 0, 0.85) 43%,
+    rgba(0, 0, 0, 0.45) 61%,
+    transparent 82%
+  );
+
+  mask-image: radial-gradient(
+    ellipse 95% 90% at 0% 0%,
+    #000 0%,
+    #000 28%,
+    rgba(0, 0, 0, 0.85) 43%,
+    rgba(0, 0, 0, 0.45) 61%,
+    transparent 82%
+  );
+}
+
+
+/* Website content stays above decoration */
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
 }
 
 button,
@@ -2117,4 +2195,44 @@ main {
   border-radius: 10px;
   margin-top: 12px;
   margin-bottom: 12px;
+}
+
+/* Keep the decorative accent balanced on smaller screens. */
+@media (max-width: 760px) {
+  body::before {
+    top: -90px;
+    left: -180px;
+    width: 680px;
+    height: 470px;
+    opacity: 0.8;
+  }
+
+  body::after {
+    top: 48px;
+    left: -92px;
+    width: 540px;
+    height: 350px;
+    opacity: 0.62;
+  }
+}
+
+@media (max-width: 520px) {
+  body::after {
+    left: -120px;
+    width: 500px;
+    opacity: 0.48;
+  }
+}
+
+@media (max-width: 700px) {
+  body::after {
+    width: 500px;
+    height: 360px;
+    opacity: 0.6;
+  }
+
+  body::before {
+    width: 520px;
+    height: 400px;
+  }
 }
