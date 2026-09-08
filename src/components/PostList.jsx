@@ -4,13 +4,19 @@ import { getPosts, voteOnPost } from '../api'
 export default function PostList({
   onOpenPost,
   onOpenProfile,
-  session
+  session,
+  onPostsChange
 }) {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState('created_at')
   const [search, setSearch] = useState('')
   const [votingId, setVotingId] = useState(null)
+
+  const [
+    lastFetchWasGlobal,
+    setLastFetchWasGlobal
+  ] = useState(true)
 
   const uid = session?.user?.id
 
@@ -38,8 +44,15 @@ export default function PostList({
     }
 
     try {
+      const cleanSearch =
+        search.trim()
+
       let postsData =
-        await getPosts(search)
+        await getPosts(cleanSearch)
+
+      setLastFetchWasGlobal(
+        cleanSearch === ''
+      )
 
       if (sortBy === 'upvotes') {
         postsData =
@@ -67,157 +80,132 @@ export default function PostList({
     }
   }
 
-useEffect(() => {
-  Promise.resolve().then(() =>
-    fetchPosts(true)
-  )
+  useEffect(() => {
+    Promise.resolve().then(() =>
+      fetchPosts(true)
+    )
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [sortBy, session])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortBy, session])
 
-const handleVote = async (
-  e,
-  post,
-  voteType
-) => {
-  e.stopPropagation()
+  useEffect(() => {
+    if (
+      lastFetchWasGlobal &&
+      onPostsChange
+    ) {
+      onPostsChange(posts)
+    }
+  }, [
+    posts,
+    lastFetchWasGlobal,
+    onPostsChange
+  ])
 
-  if (
-    !uid ||
-    votingId === post.id
-  ) {
-    return
-  }
-
-  const previousPost = {
-    ...post
-  }
-
-  const currentVote =
-    post.myVote || null
-
-  const currentUpvotes =
-    getUpvoteCount(post)
-
-  const currentDownvotes =
-    getDownvoteCount(post)
-
-  let optimisticVote =
+  const handleVote = async (
+    e,
+    post,
     voteType
-
-  let optimisticUpvotes =
-    currentUpvotes
-
-  let optimisticDownvotes =
-    currentDownvotes
-
-
-  // Clicking the same vote again removes it.
-  if (
-    currentVote === voteType
-  ) {
-    optimisticVote =
-      null
+  ) => {
+    e.stopPropagation()
 
     if (
-      voteType === 'up'
+      !uid ||
+      votingId === post.id
+    ) {
+      return
+    }
+
+    const previousPost = {
+      ...post
+    }
+
+    const currentVote =
+      post.myVote || null
+
+    const currentUpvotes =
+      getUpvoteCount(post)
+
+    const currentDownvotes =
+      getDownvoteCount(post)
+
+    let optimisticVote =
+      voteType
+
+    let optimisticUpvotes =
+      currentUpvotes
+
+    let optimisticDownvotes =
+      currentDownvotes
+
+    // Clicking the same vote again removes it.
+    if (
+      currentVote === voteType
+    ) {
+      optimisticVote =
+        null
+
+      if (
+        voteType === 'up'
+      ) {
+        optimisticUpvotes =
+          Math.max(
+            0,
+            currentUpvotes - 1
+          )
+      } else {
+        optimisticDownvotes =
+          Math.max(
+            0,
+            currentDownvotes - 1
+          )
+      }
+    }
+
+    // Switching from upvote to downvote.
+    else if (
+      currentVote === 'up' &&
+      voteType === 'down'
     ) {
       optimisticUpvotes =
         Math.max(
           0,
           currentUpvotes - 1
         )
-    } else {
+
+      optimisticDownvotes =
+        currentDownvotes + 1
+    }
+
+    // Switching from downvote to upvote.
+    else if (
+      currentVote === 'down' &&
+      voteType === 'up'
+    ) {
       optimisticDownvotes =
         Math.max(
           0,
           currentDownvotes - 1
         )
+
+      optimisticUpvotes =
+        currentUpvotes + 1
     }
-  }
 
-  // Switching from upvote to downvote.
-  else if (
-    currentVote === 'up' &&
-    voteType === 'down'
-  ) {
-    optimisticUpvotes =
-      Math.max(
-        0,
-        currentUpvotes - 1
-      )
+    // Brand-new vote.
+    else if (
+      voteType === 'up'
+    ) {
+      optimisticUpvotes =
+        currentUpvotes + 1
+    }
 
-    optimisticDownvotes =
-      currentDownvotes + 1
-  }
-
-  // Switching from downvote to upvote.
-  else if (
-    currentVote === 'down' &&
-    voteType === 'up'
-  ) {
-    optimisticDownvotes =
-      Math.max(
-        0,
-        currentDownvotes - 1
-      )
-
-    optimisticUpvotes =
-      currentUpvotes + 1
-  }
-
-  // Brand-new vote.
-  else if (
-    voteType === 'up'
-  ) {
-    optimisticUpvotes =
-      currentUpvotes + 1
-  }
-
-  else {
-    optimisticDownvotes =
-      currentDownvotes + 1
-  }
-
-
-  // ----------------------------------------------
-  // UPDATE UI IMMEDIATELY
-  // ----------------------------------------------
-
-  setPosts(prev =>
-    prev.map(item =>
-      item.id === post.id
-        ? {
-            ...item,
-
-            myVote:
-              optimisticVote,
-
-            liveUpvotes:
-              optimisticUpvotes,
-
-            liveDownvotes:
-              optimisticDownvotes
-          }
-        : item
-    )
-  )
-
-  setVotingId(
-    post.id
-  )
-
-
-  try {
-    const result =
-      await voteOnPost(
-        post.id,
-        voteType
-      )
-
+    else {
+      optimisticDownvotes =
+        currentDownvotes + 1
+    }
 
     // ----------------------------------------------
-    // SYNC WITH EXACT SERVER RESULT
+    // UPDATE UI IMMEDIATELY
     // ----------------------------------------------
 
     setPosts(prev =>
@@ -227,46 +215,79 @@ const handleVote = async (
               ...item,
 
               myVote:
-                result.vote,
+                optimisticVote,
 
               liveUpvotes:
-                result.liveUpvotes,
+                optimisticUpvotes,
 
               liveDownvotes:
-                result.liveDownvotes
+                optimisticDownvotes
             }
           : item
       )
     )
-  } catch (error) {
-    console.error(
-      'Vote failed:',
-      error
-    )
 
-
-    // ----------------------------------------------
-    // ROLLBACK IF SERVER FAILED
-    // ----------------------------------------------
-
-    setPosts(prev =>
-      prev.map(item =>
-        item.id === post.id
-          ? previousPost
-          : item
-      )
-    )
-
-    alert(
-      'Error voting: ' +
-      error.message
-    )
-  } finally {
     setVotingId(
-      null
+      post.id
     )
+
+    try {
+      const result =
+        await voteOnPost(
+          post.id,
+          voteType
+        )
+
+      // ----------------------------------------------
+      // SYNC WITH EXACT SERVER RESULT
+      // ----------------------------------------------
+
+      setPosts(prev =>
+        prev.map(item =>
+          item.id === post.id
+            ? {
+                ...item,
+
+                myVote:
+                  result.vote,
+
+                liveUpvotes:
+                  result.liveUpvotes,
+
+                liveDownvotes:
+                  result.liveDownvotes
+              }
+            : item
+        )
+      )
+    } catch (error) {
+      console.error(
+        'Vote failed:',
+        error
+      )
+
+      // ----------------------------------------------
+      // ROLLBACK IF SERVER FAILED
+      // ----------------------------------------------
+
+      setPosts(prev =>
+        prev.map(item =>
+          item.id === post.id
+            ? previousPost
+            : item
+        )
+      )
+
+      alert(
+        'Error voting: ' +
+        error.message
+      )
+    } finally {
+      setVotingId(
+        null
+      )
+    }
   }
-}
 
   if (loading) {
     return (
@@ -357,7 +378,7 @@ const handleVote = async (
       </div>
 
       <ul className="posts">
-        {posts.map(post => (
+        {posts.map((post, index) => (
           <li
             key={post.id}
             className="post-card"
@@ -393,9 +414,21 @@ const handleVote = async (
             {post.game_art_url && (
               <img
                 src={post.game_art_url}
-                alt={post.game_name || 'Game'}
+                alt={
+                  post.game_name ||
+                  'Game'
+                }
                 className="post-game-image"
-                loading="lazy"
+                loading={
+                  index < 3
+                    ? 'eager'
+                    : 'lazy'
+                }
+                fetchPriority={
+                  index === 0
+                    ? 'high'
+                    : 'auto'
+                }
               />
             )}
 

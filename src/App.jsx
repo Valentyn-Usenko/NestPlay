@@ -20,6 +20,7 @@ import {
 } from './api'
 
 import PostList from './components/PostList'
+import RightSidebar from './components/RightSidebar'
 import PostModal from './components/PostModal'
 import PostPage from './components/PostPage'
 import ProfilePage from './components/ProfilePage'
@@ -38,6 +39,11 @@ export default function App() {
 
   const [activePost, setActivePost] =
     useState(null)
+
+  const [
+    sidebarPosts,
+    setSidebarPosts
+  ] = useState([])
 
   const [activePage, setActivePage] =
     useState('feed')
@@ -614,18 +620,37 @@ export default function App() {
           {activePage ===
             'feed' &&
             !activePost && (
-              <PostList
-                onOpenPost={
-                  post =>
-                    setActivePost(
-                      post
-                    )
-                }
-                onOpenProfile={
-                  openUserProfile
-                }
-                session={session}
-              />
+              <div className="feed-layout">
+                <section className="feed-main">
+                  <PostList
+                    onOpenPost={
+                      post =>
+                        setActivePost(
+                          post
+                        )
+                    }
+                    onOpenProfile={
+                      openUserProfile
+                    }
+                    session={session}
+                    onPostsChange={
+                      setSidebarPosts
+                    }
+                  />
+                </section>
+
+                <RightSidebar
+                  posts={
+                    sidebarPosts
+                  }
+                  onOpenPost={
+                    post =>
+                      setActivePost(
+                        post
+                      )
+                  }
+                />
+              </div>
             )}
 
           {activePage ===
