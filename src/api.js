@@ -86,6 +86,58 @@ export function deletePost(id) {
   )
 }
 
+// ==================================================
+// GAME HUBS
+// ==================================================
+
+export function getGameHub(
+  gameId
+) {
+  return apiFetch(
+    `/api/game-hubs/${encodeURIComponent(
+      gameId
+    )}`
+  )
+}
+
+
+export function joinGameHub(
+  game
+) {
+  return apiFetch(
+    `/api/game-hubs/${encodeURIComponent(
+      game.id
+    )}/join`,
+    {
+      method: 'POST',
+
+      body: JSON.stringify({
+        game_name:
+          game.name,
+
+        game_art_url:
+          game.gameArtUrl ||
+          game.game_art_url ||
+          game.background_image ||
+          null
+      })
+    }
+  )
+}
+
+
+export function leaveGameHub(
+  gameId
+) {
+  return apiFetch(
+    `/api/game-hubs/${encodeURIComponent(
+      gameId
+    )}/join`,
+    {
+      method: 'DELETE'
+    }
+  )
+}
 
 // ==================================================
 // VOTES

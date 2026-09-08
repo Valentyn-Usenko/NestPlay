@@ -21,7 +21,8 @@ import useEscapeKey from '../hooks/useEscapeKey'
 export default function PostModal({
   session,
   onClose,
-  onCreated
+  onCreated,
+  initialGame = null
 }) {
   const [
     title,
@@ -49,14 +50,49 @@ export default function PostModal({
   ] = useState(false)
 
   const [
-    selectedGame,
-    setSelectedGame
-  ] = useState(null)
-
-  const [
     creating,
     setCreating
   ] = useState(false)
+
+
+  const normalizeInitialGame =
+    game => {
+      if (!game) {
+        return null
+      }
+
+      return {
+        id:
+          game.id ??
+          game.game_id ??
+          null,
+
+        name:
+          game.name ??
+          game.game_name ??
+          '',
+
+        background_image:
+          game.gameArtUrl ??
+          game.game_art_url ??
+          game.background_image ??
+          null
+      }
+    }
+
+
+  const [
+    selectedGame,
+    setSelectedGame
+  ] = useState(
+    normalizeInitialGame(
+      initialGame
+    )
+  )
+
+
+  const gameLocked =
+    Boolean(initialGame)
 
 
   const username =
@@ -67,20 +103,20 @@ export default function PostModal({
     'Anonymous'
 
 
+  useEscapeKey(
+    onClose
+  )
+
+
   // ==================================================
   // GAME SEARCH
-  //
-  // Browser
-  // ↓
-  // NestPlay backend
-  // ↓
-  // RAWG
-  //
-  // RAWG API key never reaches the browser.
   // ==================================================
 
   useEffect(() => {
-    if (!query.trim()) {
+    if (
+      gameLocked ||
+      !query.trim()
+    ) {
       setGames([])
       return
     }
@@ -105,7 +141,7 @@ export default function PostModal({
               )
             }
 
-            const res =
+            const response =
               await fetch(
                 `${API_BASE_URL}/api/games/search?q=${encodeURIComponent(
                   query.trim()
@@ -118,25 +154,25 @@ export default function PostModal({
                 }
               )
 
-            const json =
-              await res.json()
+            const data =
+              await response.json()
 
-            if (!res.ok) {
+            if (!response.ok) {
               throw new Error(
-                json.error ||
+                data.error ||
                 'Game search failed'
               )
             }
 
             if (!canceled) {
               setGames(
-                json.results ||
+                data.results ||
                 []
               )
             }
           } catch (error) {
             console.error(
-              'Game search failed',
+              'Game search failed:',
               error
             )
 
@@ -162,7 +198,10 @@ export default function PostModal({
         timeout
       )
     }
-  }, [query])
+  }, [
+    query,
+    gameLocked
+  ])
 
 
   // ==================================================
@@ -173,7 +212,7 @@ export default function PostModal({
     e.preventDefault()
 
     if (
-      !title ||
+      !title.trim() ||
       !selectedGame ||
       !session
     ) {
@@ -185,7 +224,9 @@ export default function PostModal({
     )
 
     const payload = {
-      title,
+      title:
+        title.trim(),
+
       content,
 
       game_id:
@@ -197,7 +238,8 @@ export default function PostModal({
         null,
 
       game_art_url:
-        selectedGame.background_image ||
+        selectedGame
+          .background_image ||
         null
     }
 
@@ -210,8 +252,6 @@ export default function PostModal({
       onCreated(
         data
       )
-
-      onClose()
     } catch (error) {
       alert(
         'Error creating post: ' +
@@ -225,217 +265,56 @@ export default function PostModal({
   }
 
 
-  const inputStyle = {
-    width:
-      '100%',
-
-    boxSizing:
-      'border-box',
-
-    padding:
-      '0.7rem 0.9rem',
-
-    borderRadius:
-      '8px',
-
-    border:
-      '1px solid #2e2e2e',
-
-    background:
-      '#0d0d0d',
-
-    color:
-      '#fff',
-
-    fontSize:
-      '0.95rem',
-
-    outline:
-      'none',
-
-    transition:
-      'border-color 0.2s'
-  }
-
-  useEscapeKey(onClose)
-
-  const labelStyle = {
-    display:
-      'flex',
-
-    flexDirection:
-      'column',
-
-    gap:
-      '0.4rem',
-
-    fontSize:
-      '0.78rem',
-
-    fontWeight:
-      '600',
-
-    color:
-      '#888',
-
-    textTransform:
-      'uppercase',
-
-    letterSpacing:
-      '0.5px'
-  }
-
-
   return (
     <div className="modal-overlay">
-      <div
-        className="modal"
-        style={{
-          maxWidth:
-            '560px',
 
-          padding:
-            '2rem',
+      <div className="post-create-modal">
 
-          borderRadius:
-            '16px',
+        <div className="post-create-header">
 
-          border:
-            '1px solid #222'
-        }}
-      >
-        <div
-          style={{
-            display:
-              'flex',
-
-            justifyContent:
-              'space-between',
-
-            alignItems:
-              'flex-start',
-
-            marginBottom:
-              '1.5rem'
-          }}
-        >
           <div>
-            <h2
-              style={{
-                margin:
-                  0,
 
-                fontSize:
-                  '1.3rem',
-
-                fontWeight:
-                  '700'
-              }}
-            >
+            <h2>
               Create a Post
             </h2>
 
-            <p
-              style={{
-                margin:
-                  '0.25rem 0 0 0',
-
-                fontSize:
-                  '0.82rem',
-
-                color:
-                  '#555'
-              }}
-            >
+            <p>
               Posting as{' '}
-
-              <span
-                style={{
-                  color:
-                    '#646cff',
-
-                  fontWeight:
-                    '600'
-                }}
-              >
+              <span>
                 @{username}
               </span>
             </p>
+
           </div>
+
 
           <button
             type="button"
+            className="post-create-close"
             onClick={
               onClose
             }
-            style={{
-              background:
-                'none',
-
-              border:
-                '1px solid #2e2e2e',
-
-              color:
-                '#aaa',
-
-              borderRadius:
-                '8px',
-
-              width:
-                '32px',
-
-              height:
-                '32px',
-
-              cursor:
-                'pointer',
-
-              fontSize:
-                '1rem',
-
-              display:
-                'flex',
-
-              alignItems:
-                'center',
-
-              justifyContent:
-                'center'
-            }}
           >
             ✕
           </button>
+
         </div>
 
+
         <form
+          className="post-create-form"
           onSubmit={
             handleCreate
           }
-          style={{
-            display:
-              'flex',
-
-            flexDirection:
-              'column',
-
-            gap:
-              '1.1rem'
-          }}
         >
-          <label
-            style={
-              labelStyle
-            }
-          >
-            Post Title
 
-            <span
-              style={{
-                color:
-                  '#fc4646'
-              }}
-            >
-              *
+          <label className="post-create-field">
+
+            <span>
+              Post Title
+              <b>
+                *
+              </b>
             </span>
 
             <input
@@ -450,18 +329,16 @@ export default function PostModal({
                     e.target.value
                   )
               }
-              style={
-                inputStyle
-              }
             />
+
           </label>
 
-          <label
-            style={
-              labelStyle
-            }
-          >
-            Your Opinion
+
+          <label className="post-create-field">
+
+            <span>
+              Your Opinion
+            </span>
 
             <textarea
               placeholder="Share your thoughts..."
@@ -474,462 +351,186 @@ export default function PostModal({
                     e.target.value
                   )
               }
-              rows={4}
-              style={{
-                ...inputStyle,
-
-                resize:
-                  'vertical',
-
-                fontFamily:
-                  'inherit'
-              }}
+              rows={5}
             />
+
           </label>
 
-          <div
-            style={{
-              display:
-                'flex',
 
-              flexDirection:
-                'column',
+          {!gameLocked && (
+            <div className="post-game-search">
 
-              gap:
-                '0.4rem'
-            }}
-          >
-            <span
-              style={{
-                ...labelStyle,
+              <label className="post-create-field">
 
-                display:
-                  'block'
-              }}
-            >
-              Search Game{' '}
+                <span>
+                  Search Game
+                  <b>
+                    *
+                  </b>
+                </span>
 
-              <span
-                style={{
-                  color:
-                    '#fc4646'
-                }}
-              >
-                *
-              </span>
-            </span>
+                <input
+                  placeholder="Type a game name..."
+                  value={
+                    query
+                  }
+                  onChange={
+                    e =>
+                      setQuery(
+                        e.target.value
+                      )
+                  }
+                />
 
-            <input
-              placeholder="Type a game name..."
-              value={
-                query
-              }
-              onChange={
-                e =>
-                  setQuery(
-                    e.target.value
-                  )
-              }
-              style={
-                inputStyle
-              }
-            />
+              </label>
 
-            {loadingGames && (
-              <div
-                style={{
-                  color:
-                    '#555',
 
-                  fontSize:
-                    '0.8rem',
+              {loadingGames && (
+                <div className="post-game-searching">
+                  Searching...
+                </div>
+              )}
 
-                  paddingLeft:
-                    '0.2rem'
-                }}
-              >
-                Searching...
-              </div>
-            )}
 
-            {games.length >
-              0 && (
-              <div
-                style={{
-                  display:
-                    'flex',
+              {games.length >
+                0 && (
+                <div className="post-game-results">
 
-                  gap:
-                    '0.5rem',
-
-                  overflowX:
-                    'auto',
-
-                  padding:
-                    '0.5rem 0',
-
-                  scrollbarWidth:
-                    'none'
-                }}
-              >
-                {games.map(
-                  game => (
-                    <button
-                      type="button"
-                      key={
-                        game.id
-                      }
-                      onClick={() => {
-                        setSelectedGame(
-                          game
-                        )
-
-                        setGames(
-                          []
-                        )
-                      }}
-                      style={{
-                        flexShrink:
-                          0,
-
-                        width:
-                          '90px',
-
-                        background:
-                          selectedGame
-                            ?.id ===
+                  {games.map(
+                    game => (
+                      <button
+                        type="button"
+                        key={
                           game.id
-                            ? '#1a1a3a'
-                            : '#111',
+                        }
+                        className="post-game-result"
+                        onClick={() => {
+                          setSelectedGame(
+                            game
+                          )
 
-                        border:
-                          selectedGame
-                            ?.id ===
-                          game.id
-                            ? '1px solid #646cff'
-                            : '1px solid #2a2a2a',
-
-                        borderRadius:
-                          '8px',
-
-                        padding:
-                          '0.4rem',
-
-                        cursor:
-                          'pointer',
-
-                        display:
-                          'flex',
-
-                        flexDirection:
-                          'column',
-
-                        alignItems:
-                          'center',
-
-                        gap:
-                          '0.3rem'
-                      }}
-                    >
-                      {game.background_image ? (
-                        <img
-                          src={
-                            game.background_image
-                          }
-                          alt="cover"
-                          style={{
-                            width:
-                              '100%',
-
-                            height:
-                              '54px',
-
-                            objectFit:
-                              'cover',
-
-                            borderRadius:
-                              '5px'
-                          }}
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            width:
-                              '100%',
-
-                            height:
-                              '54px',
-
-                            background:
-                              '#1a1a1a',
-
-                            borderRadius:
-                              '5px'
-                          }}
-                        />
-                      )}
-
-                      <div
-                        style={{
-                          fontSize:
-                            '0.68rem',
-
-                          color:
-                            '#ccc',
-
-                          textAlign:
-                            'center',
-
-                          lineHeight:
-                            '1.2',
-
-                          wordBreak:
-                            'break-word'
+                          setGames([])
+                          setQuery('')
                         }}
                       >
-                        {game.name}
-                      </div>
-                    </button>
-                  )
-                )}
-              </div>
-            )}
-          </div>
+
+                        {game.background_image ? (
+                          <img
+                            src={
+                              game.background_image
+                            }
+                            alt={
+                              game.name
+                            }
+                          />
+                        ) : (
+                          <div className="post-game-result-placeholder">
+                            🎮
+                          </div>
+                        )}
+
+                        <span>
+                          {
+                            game.name
+                          }
+                        </span>
+
+                      </button>
+                    )
+                  )}
+
+                </div>
+              )}
+
+            </div>
+          )}
+
 
           {selectedGame && (
-            <div
-              style={{
-                background:
-                  '#0d0d0d',
+            <div className="selected-game-card">
 
-                border:
-                  '1px solid #2a2a2a',
+              {selectedGame
+                .background_image && (
+                <img
+                  src={
+                    selectedGame
+                      .background_image
+                  }
+                  alt={
+                    selectedGame.name
+                  }
+                />
+              )}
 
-                borderRadius:
-                  '12px',
 
-                overflow:
-                  'hidden'
-              }}
-            >
-              <div
-                style={{
-                  position:
-                    'relative'
-                }}
-              >
-                {selectedGame
-                  .background_image && (
-                  <img
-                    src={
-                      selectedGame
-                        .background_image
-                    }
-                    alt="art"
-                    style={{
-                      width:
-                        '100%',
+              <div className="selected-game-overlay">
 
-                      height:
-                        '130px',
+                <span>
+                  {gameLocked
+                    ? 'Posting in'
+                    : 'Selected Game'}
+                </span>
 
-                      objectFit:
-                        'cover',
+                <strong>
+                  {
+                    selectedGame.name
+                  }
+                </strong>
 
-                      display:
-                        'block',
+              </div>
 
-                      opacity:
-                        0.7
-                    }}
-                  />
-                )}
 
-                <div
-                  style={{
-                    position:
-                      'absolute',
-
-                    bottom:
-                      0,
-
-                    left:
-                      0,
-
-                    right:
-                      0,
-
-                    background:
-                      'linear-gradient(transparent, #0d0d0d)',
-
-                    padding:
-                      '1rem 1rem 0.5rem'
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize:
-                        '0.85rem',
-
-                      fontWeight:
-                        '600',
-
-                      color:
-                        '#fff'
-                    }}
-                  >
-                    {
-                      selectedGame.name
-                    }
-                  </div>
-                </div>
-
+              {!gameLocked && (
                 <button
                   type="button"
+                  className="selected-game-remove"
                   onClick={() =>
                     setSelectedGame(
                       null
                     )
                   }
-                  style={{
-                    position:
-                      'absolute',
-
-                    top:
-                      '0.5rem',
-
-                    right:
-                      '0.5rem',
-
-                    background:
-                      'rgba(0,0,0,0.6)',
-
-                    border:
-                      'none',
-
-                    color:
-                      '#aaa',
-
-                    borderRadius:
-                      '6px',
-
-                    padding:
-                      '0.2rem 0.5rem',
-
-                    cursor:
-                      'pointer',
-
-                    fontSize:
-                      '0.75rem'
-                  }}
                 >
                   ✕ Remove
                 </button>
-              </div>
+              )}
+
             </div>
           )}
 
-          <div
-            style={{
-              display:
-                'flex',
 
-              gap:
-                '0.75rem',
+          <div className="post-create-actions">
 
-              marginTop:
-                '0.25rem'
-            }}
-          >
             <button
               type="submit"
+              className="post-create-publish"
               disabled={
-                !title ||
+                !title.trim() ||
                 !selectedGame ||
                 creating
               }
-              style={{
-                flex:
-                  1,
-
-                padding:
-                  '0.8rem',
-
-                borderRadius:
-                  '8px',
-
-                border:
-                  'none',
-
-                background:
-                  !title ||
-                  !selectedGame ||
-                  creating
-                    ? '#2a2a2a'
-                    : '#646cff',
-
-                color:
-                  !title ||
-                  !selectedGame ||
-                  creating
-                    ? '#555'
-                    : '#fff',
-
-                fontWeight:
-                  '600',
-
-                fontSize:
-                  '0.95rem',
-
-                cursor:
-                  !title ||
-                  !selectedGame ||
-                  creating
-                    ? 'not-allowed'
-                    : 'pointer',
-
-                transition:
-                  'background 0.2s'
-              }}
             >
               {creating
                 ? 'Publishing...'
                 : 'Publish Post'}
             </button>
 
+
             <button
               type="button"
+              className="post-create-cancel"
               onClick={
                 onClose
               }
-              style={{
-                padding:
-                  '0.8rem 1.25rem',
-
-                borderRadius:
-                  '8px',
-
-                border:
-                  '1px solid #2e2e2e',
-
-                background:
-                  'transparent',
-
-                color:
-                  '#aaa',
-
-                cursor:
-                  'pointer',
-
-                fontSize:
-                  '0.95rem'
-              }}
             >
               Cancel
             </button>
+
           </div>
+
         </form>
+
       </div>
+
     </div>
   )
 }

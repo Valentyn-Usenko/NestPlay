@@ -2665,3 +2665,2286 @@ main {
       none;
   }
 }
+
+/* ==================================================
+   GAME HUB
+================================================== */
+
+.game-hub {
+  width: 100%;
+  min-width: 0;
+}
+
+
+/* ==================================================
+   GAME HUB BACK BUTTON
+================================================== */
+
+.hub-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+
+  margin-bottom: 0.9rem;
+  padding: 0.55rem 0.8rem;
+
+  color: var(--muted);
+
+  background:
+    rgba(255, 255, 255, 0.025);
+
+  border:
+    1px solid var(--line);
+
+  border-radius: 9px;
+
+  font-size: 0.78rem;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    color 150ms ease,
+    background 150ms ease,
+    border-color 150ms ease,
+    transform 150ms ease;
+}
+
+.hub-back-btn:hover {
+  color: #fff;
+
+  background:
+    rgba(255, 90, 54, 0.07);
+
+  border-color:
+    rgba(255, 90, 54, 0.35);
+
+  transform:
+    translateX(-2px);
+}
+
+
+/* ==================================================
+   GAME HUB HERO
+================================================== */
+
+.game-hub-hero {
+  position: relative;
+
+  width: 100%;
+  min-height: 265px;
+
+  overflow: hidden;
+
+  background-color:
+    #0d0d0e;
+
+  background-size:
+    cover;
+
+  background-position:
+    center;
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.12);
+
+  border-radius:
+    18px;
+
+  box-shadow:
+    0 20px 55px
+    rgba(0, 0, 0, 0.35);
+}
+
+
+/* Subtle orange line around hero */
+.game-hub-hero::before {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  pointer-events: none;
+
+  border-radius:
+    inherit;
+
+  background:
+    linear-gradient(
+      120deg,
+      rgba(255, 90, 54, 0.12),
+      transparent 32%,
+      transparent 70%,
+      rgba(255, 90, 54, 0.04)
+    );
+}
+
+
+/* Bottom fade */
+.game-hub-hero::after {
+  content: "";
+
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  height: 45%;
+
+  pointer-events: none;
+
+  background:
+    linear-gradient(
+      180deg,
+      transparent,
+      rgba(5, 5, 5, 0.42)
+    );
+}
+
+
+.game-hub-hero-content {
+  position: relative;
+  z-index: 2;
+
+  display: flex;
+  align-items: center;
+
+  gap: 1.4rem;
+
+  min-height: 265px;
+
+  padding: 1.5rem 1.65rem;
+}
+
+
+/* ==================================================
+   GAME HUB COVER
+================================================== */
+
+.game-hub-cover {
+  flex-shrink: 0;
+
+  width: 170px;
+  height: 205px;
+
+  overflow: hidden;
+
+  background:
+    #101011;
+
+  border:
+    1px solid
+    rgba(255, 90, 54, 0.38);
+
+  border-radius:
+    15px;
+
+  box-shadow:
+    0 14px 35px
+    rgba(0, 0, 0, 0.45);
+}
+
+.game-hub-cover img {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+
+/* ==================================================
+   GAME HUB INFORMATION
+================================================== */
+
+.game-hub-info {
+  display: flex;
+  flex-direction: column;
+
+  align-items: flex-start;
+
+  min-width: 0;
+  max-width: 620px;
+}
+
+
+.hub-eyebrow {
+  margin-bottom:
+    0.35rem;
+
+  color:
+    var(--accent);
+
+  font-size:
+    0.7rem;
+
+  font-weight:
+    800;
+
+  letter-spacing:
+    0.12em;
+
+  text-transform:
+    uppercase;
+}
+
+
+.game-hub-info h1 {
+  margin:
+    0;
+
+  color:
+    #fff;
+
+  font-size:
+    clamp(
+      1.8rem,
+      4vw,
+      2.65rem
+    );
+
+  line-height:
+    1.05;
+
+  letter-spacing:
+    -0.025em;
+}
+
+
+.game-hub-info > p {
+  max-width:
+    520px;
+
+  margin:
+    0.65rem 0 1rem;
+
+  color:
+    rgba(255, 255, 255, 0.7);
+
+  font-size:
+    0.88rem;
+
+  line-height:
+    1.55;
+}
+
+
+/* ==================================================
+   GAME HUB STATS
+================================================== */
+
+.hub-stats {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 0.7rem;
+}
+
+
+.hub-stats > div {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 92px;
+
+  padding:
+    0.62rem
+    0.8rem;
+
+  background:
+    rgba(7, 7, 7, 0.62);
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.09);
+
+  border-radius:
+    10px;
+
+  backdrop-filter:
+    blur(8px);
+}
+
+
+.hub-stats strong {
+  color:
+    #fff;
+
+  font-size:
+    0.95rem;
+}
+
+
+.hub-stats span {
+  margin-top:
+    0.08rem;
+
+  color:
+    var(--muted);
+
+  font-size:
+    0.66rem;
+
+  font-weight:
+    650;
+
+  text-transform:
+    uppercase;
+
+  letter-spacing:
+    0.05em;
+}
+
+
+/* ==================================================
+   GAME HUB TABS
+================================================== */
+
+.game-hub-tabs {
+  display: flex;
+  align-items: center;
+
+  gap: 0.3rem;
+
+  width: 100%;
+
+  margin-top:
+    0.85rem;
+
+  padding:
+    0 0.25rem;
+
+  overflow-x:
+    auto;
+
+  border-bottom:
+    1px solid
+    var(--line);
+}
+
+
+.game-hub-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+
+.game-hub-tabs button {
+  position: relative;
+
+  flex-shrink: 0;
+
+  padding:
+    0.82rem
+    1rem;
+
+  color:
+    var(--muted);
+
+  background:
+    transparent;
+
+  border:
+    0;
+
+  font-size:
+    0.78rem;
+
+  font-weight:
+    700;
+
+  cursor:
+    pointer;
+
+  transition:
+    color 150ms ease,
+    background 150ms ease;
+}
+
+
+.game-hub-tabs button:hover {
+  color:
+    var(--text);
+}
+
+
+.game-hub-tabs button.active {
+  color:
+    #fff;
+}
+
+
+.game-hub-tabs button.active::after {
+  content: "";
+
+  position: absolute;
+
+  left: 15%;
+  right: 15%;
+  bottom: -1px;
+
+  height:
+    2px;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      var(--accent),
+      transparent
+    );
+
+  border-radius:
+    999px;
+
+  box-shadow:
+    0 0 14px
+    rgba(255, 90, 54, 0.35);
+}
+
+
+/* ==================================================
+   GAME HUB MAIN LAYOUT
+================================================== */
+
+.game-hub-layout {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    300px;
+
+  align-items:
+    start;
+
+  gap:
+    1rem;
+
+  margin-top:
+    1rem;
+}
+
+
+.game-hub-main {
+  display: flex;
+  flex-direction: column;
+
+  gap: 1rem;
+
+  min-width: 0;
+}
+
+
+/* ==================================================
+   GAME HUB SECTIONS
+================================================== */
+
+.hub-section {
+  overflow: hidden;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.02),
+      transparent 48%
+    ),
+    rgba(13, 13, 14, 0.95);
+
+  border:
+    1px solid
+    var(--line);
+
+  border-radius:
+    var(--radius-md);
+
+  box-shadow:
+    0 1px 0
+    rgba(255, 255, 255, 0.02)
+    inset;
+}
+
+
+.hub-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 1rem;
+
+  min-height:
+    48px;
+
+  padding:
+    0.8rem
+    1rem;
+
+  border-bottom:
+    1px solid
+    var(--line);
+}
+
+
+.hub-section-heading h2 {
+  margin: 0;
+
+  color:
+    var(--text);
+
+  font-size:
+    0.9rem;
+
+  font-weight:
+    800;
+}
+
+
+.hub-section-heading > span {
+  color:
+    var(--muted);
+
+  font-size:
+    0.7rem;
+
+  font-weight:
+    650;
+}
+
+
+/* ==================================================
+   TOP DISCUSSIONS
+================================================== */
+
+.hub-discussion-list {
+  display: flex;
+  flex-direction: column;
+}
+
+
+.hub-discussion-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 1rem;
+
+  width: 100%;
+
+  padding:
+    0.82rem
+    1rem;
+
+  color:
+    inherit;
+
+  background:
+    transparent;
+
+  border:
+    0;
+
+  border-bottom:
+    1px solid
+    rgba(255, 255, 255, 0.055);
+
+  text-align:
+    left;
+
+  cursor:
+    pointer;
+
+  transition:
+    background 150ms ease,
+    padding-left 150ms ease;
+}
+
+
+.hub-discussion-item:last-child {
+  border-bottom:
+    0;
+}
+
+
+.hub-discussion-item:hover {
+  padding-left:
+    1.1rem;
+
+  background:
+    rgba(255, 90, 54, 0.035);
+}
+
+
+.hub-discussion-item > div {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.17rem;
+
+  min-width: 0;
+}
+
+
+.hub-discussion-item strong {
+  overflow: hidden;
+
+  color:
+    var(--text-soft);
+
+  font-size:
+    0.8rem;
+
+  font-weight:
+    700;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+}
+
+
+.hub-discussion-item span {
+  color:
+    var(--muted);
+
+  font-size:
+    0.66rem;
+}
+
+
+.hub-arrow {
+  flex-shrink: 0;
+
+  color:
+    var(--muted-2);
+
+  font-size:
+    1.35rem;
+
+  transition:
+    color 150ms ease,
+    transform 150ms ease;
+}
+
+
+.hub-discussion-item:hover
+.hub-arrow {
+  color:
+    var(--accent);
+
+  transform:
+    translateX(2px);
+}
+
+
+/* ==================================================
+   HUB POSTS
+================================================== */
+
+.hub-post-list {
+  display: flex;
+  flex-direction: column;
+}
+
+
+.hub-post-card {
+  position: relative;
+
+  padding:
+    1rem;
+
+  overflow: hidden;
+
+  border-bottom:
+    1px solid
+    var(--line);
+
+  cursor:
+    pointer;
+
+  transition:
+    background 160ms ease;
+}
+
+
+.hub-post-card:last-child {
+  border-bottom:
+    0;
+}
+
+
+.hub-post-card:hover {
+  background:
+    rgba(255, 90, 54, 0.025);
+}
+
+
+.hub-post-card::before {
+  content: "";
+
+  position: absolute;
+
+  top: 15px;
+  bottom: 15px;
+  left: 0;
+
+  width:
+    2px;
+
+  opacity: 0;
+
+  background:
+    linear-gradient(
+      180deg,
+      transparent,
+      var(--accent),
+      transparent
+    );
+
+  transition:
+    opacity 160ms ease;
+}
+
+
+.hub-post-card:hover::before {
+  opacity: 1;
+}
+
+
+/* ==================================================
+   HUB POST META
+================================================== */
+
+.hub-post-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+
+  gap: 0.35rem;
+
+  color:
+    var(--muted);
+
+  font-size:
+    0.7rem;
+}
+
+
+.hub-author {
+  color:
+    var(--accent);
+
+  font-weight:
+    750;
+
+  cursor:
+    pointer;
+
+  transition:
+    color 150ms ease;
+}
+
+
+.hub-author:hover {
+  color:
+    #ff8a70;
+}
+
+
+/* ==================================================
+   HUB POST CONTENT
+================================================== */
+
+.hub-post-card h3 {
+  margin:
+    0.6rem
+    0
+    0.3rem;
+
+  color:
+    var(--text);
+
+  font-size:
+    1rem;
+
+  line-height:
+    1.35;
+}
+
+
+.hub-post-content {
+  display:
+    -webkit-box;
+
+  margin:
+    0.25rem 0 0.75rem;
+
+  overflow:
+    hidden;
+
+  color:
+    var(--text-soft);
+
+  font-size:
+    0.8rem;
+
+  line-height:
+    1.5;
+
+  -webkit-box-orient:
+    vertical;
+
+  -webkit-line-clamp:
+    3;
+}
+
+
+/* ==================================================
+   HUB POST IMAGE
+================================================== */
+
+.hub-post-image {
+  display: block;
+
+  width: 100%;
+
+  max-height:
+    380px;
+
+  margin-top:
+    0.75rem;
+
+  object-fit:
+    cover;
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.075);
+
+  border-radius:
+    11px;
+}
+
+
+/* ==================================================
+   HUB POST ACTIONS
+================================================== */
+
+.hub-post-actions {
+  display: flex;
+  align-items: center;
+
+  gap:
+    0.5rem;
+
+  margin-top:
+    0.7rem;
+}
+
+
+.hub-post-actions span {
+  display: inline-flex;
+  align-items: center;
+
+  padding:
+    0.34rem
+    0.55rem;
+
+  color:
+    var(--muted);
+
+  background:
+    rgba(255, 255, 255, 0.025);
+
+  border:
+    1px solid
+    var(--line);
+
+  border-radius:
+    8px;
+
+  font-size:
+    0.68rem;
+
+  font-weight:
+    700;
+}
+
+
+/* ==================================================
+   GAME HUB RIGHT SIDEBAR
+================================================== */
+
+.game-hub-sidebar {
+  position: sticky;
+
+  top:
+    88px;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.85rem;
+
+  min-width: 0;
+}
+
+
+/* ==================================================
+   HUB SIDEBAR CARDS
+================================================== */
+
+.hub-side-card {
+  overflow: hidden;
+
+  padding:
+    0.9rem;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.024),
+      transparent 50%
+    ),
+    rgba(13, 13, 14, 0.96);
+
+  border:
+    1px solid
+    var(--line);
+
+  border-radius:
+    var(--radius-md);
+
+  box-shadow:
+    0 1px 0
+    rgba(255, 255, 255, 0.02)
+    inset;
+}
+
+
+.hub-side-card h3 {
+  margin:
+    0 0 0.7rem;
+
+  color:
+    var(--text-soft);
+
+  font-size:
+    0.78rem;
+
+  font-weight:
+    800;
+}
+
+
+/* ==================================================
+   POPULAR HUB POSTS
+================================================== */
+
+.hub-popular-list {
+  display: flex;
+  flex-direction: column;
+}
+
+
+.hub-popular-list button {
+  display: flex;
+  flex-direction: column;
+
+  gap:
+    0.18rem;
+
+  width: 100%;
+
+  padding:
+    0.65rem
+    0;
+
+  color:
+    inherit;
+
+  background:
+    transparent;
+
+  border:
+    0;
+
+  border-bottom:
+    1px solid
+    rgba(255, 255, 255, 0.055);
+
+  text-align:
+    left;
+
+  cursor:
+    pointer;
+
+  transition:
+    padding-left 150ms ease;
+}
+
+
+.hub-popular-list button:last-child {
+  border-bottom:
+    0;
+}
+
+
+.hub-popular-list button:hover {
+  padding-left:
+    0.25rem;
+}
+
+
+.hub-popular-list strong {
+  display:
+    -webkit-box;
+
+  overflow:
+    hidden;
+
+  color:
+    var(--text-soft);
+
+  font-size:
+    0.74rem;
+
+  line-height:
+    1.35;
+
+  -webkit-box-orient:
+    vertical;
+
+  -webkit-line-clamp:
+    2;
+}
+
+
+.hub-popular-list span {
+  color:
+    var(--muted);
+
+  font-size:
+    0.64rem;
+}
+
+
+/* ==================================================
+   HUB STATS SIDEBAR
+================================================== */
+
+.hub-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap:
+    1rem;
+
+  padding:
+    0.55rem
+    0;
+
+  border-bottom:
+    1px solid
+    rgba(255, 255, 255, 0.055);
+
+  font-size:
+    0.72rem;
+}
+
+
+.hub-stat-row:last-child {
+  border-bottom:
+    0;
+}
+
+
+.hub-stat-row span {
+  color:
+    var(--muted);
+}
+
+
+.hub-stat-row strong {
+  color:
+    var(--text-soft);
+}
+
+
+/* ==================================================
+   EMPTY HUB STATE
+================================================== */
+
+.hub-empty {
+  padding:
+    1.4rem
+    1rem;
+
+  color:
+    var(--muted);
+
+  font-size:
+    0.76rem;
+
+  text-align:
+    center;
+}
+
+
+/* ==================================================
+   ALL POSTS TAB
+================================================== */
+
+.hub-all-posts {
+  margin-top:
+    1rem;
+}
+
+
+/* ==================================================
+   COMING SOON TABS
+================================================== */
+
+.hub-coming-soon {
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  min-height:
+    300px;
+
+  margin-top:
+    1rem;
+
+  padding:
+    2rem;
+
+  text-align:
+    center;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 90, 54, 0.025),
+      transparent 45%
+    ),
+    var(--panel);
+
+  border:
+    1px solid
+    var(--line);
+
+  border-radius:
+    var(--radius-md);
+}
+
+
+.hub-coming-soon > span {
+  margin-bottom:
+    0.7rem;
+
+  font-size:
+    2rem;
+}
+
+
+.hub-coming-soon h2 {
+  margin:
+    0;
+
+  color:
+    var(--text);
+
+  font-size:
+    1.1rem;
+}
+
+
+.hub-coming-soon p {
+  margin:
+    0.35rem 0 0;
+
+  color:
+    var(--muted);
+
+  font-size:
+    0.78rem;
+}
+
+
+/* ==================================================
+   GAME HUB TABLET
+================================================== */
+
+@media (max-width: 1050px) {
+  .game-hub-layout {
+    grid-template-columns:
+      minmax(0, 1fr)
+      250px;
+  }
+
+  .game-hub-cover {
+    width:
+      145px;
+
+    height:
+      180px;
+  }
+}
+
+
+/* ==================================================
+   GAME HUB SMALL TABLET
+================================================== */
+
+@media (max-width: 850px) {
+  .game-hub-layout {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .game-hub-sidebar {
+    position:
+      static;
+
+    display: grid;
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .game-hub-hero-content {
+    min-height:
+      235px;
+  }
+}
+
+
+/* ==================================================
+   GAME HUB MOBILE
+================================================== */
+
+@media (max-width: 650px) {
+  .game-hub-hero {
+    min-height:
+      360px;
+
+    background-position:
+      center;
+  }
+
+  .game-hub-hero-content {
+    align-items:
+      flex-end;
+
+    min-height:
+      360px;
+
+    padding:
+      1.15rem;
+  }
+
+  .game-hub-cover {
+    display:
+      none;
+  }
+
+  .game-hub-info {
+    width:
+      100%;
+  }
+
+  .game-hub-info h1 {
+    font-size:
+      1.8rem;
+  }
+
+  .game-hub-info > p {
+    font-size:
+      0.8rem;
+  }
+
+  .hub-stats {
+    width:
+      100%;
+  }
+
+  .hub-stats > div {
+    flex:
+      1;
+
+    min-width:
+      75px;
+  }
+
+  .game-hub-tabs {
+    padding:
+      0;
+  }
+
+  .game-hub-tabs button {
+    padding:
+      0.75rem
+      0.8rem;
+  }
+
+  .game-hub-sidebar {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .hub-post-card {
+    padding:
+      0.9rem;
+  }
+
+  .hub-post-image {
+    max-height:
+      270px;
+  }
+}
+
+
+/* ==================================================
+   GAME HUB VERY SMALL MOBILE
+================================================== */
+
+@media (max-width: 420px) {
+  .game-hub-info h1 {
+    font-size:
+      1.55rem;
+  }
+
+  .hub-stats {
+    gap:
+      0.4rem;
+  }
+
+  .hub-stats > div {
+    padding:
+      0.5rem;
+  }
+
+  .hub-stats strong {
+    font-size:
+      0.82rem;
+  }
+
+  .hub-stats span {
+    font-size:
+      0.58rem;
+  }
+
+  .hub-discussion-item {
+    padding:
+      0.75rem;
+  }
+}
+
+/* ==================================================
+   FEED -> GAME HUB LINK
+================================================== */
+
+.post-game-media {
+  position: relative;
+}
+
+.post-game-media .post-game-image {
+  margin-bottom: 12px;
+}
+
+.post-game-hub-link {
+  position: absolute;
+
+  top: 12px;
+  left: 12px;
+
+  display: inline-flex;
+  align-items: center;
+
+  gap: 0.42rem;
+
+  max-width:
+    calc(100% - 24px);
+
+  padding:
+    0.48rem
+    0.68rem;
+
+  overflow: hidden;
+
+  color:
+    #fff;
+
+  background:
+    rgba(9, 9, 10, 0.82);
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.14);
+
+  border-radius:
+    9px;
+
+  box-shadow:
+    0 6px 20px
+    rgba(0, 0, 0, 0.3);
+
+  backdrop-filter:
+    blur(10px);
+
+  -webkit-backdrop-filter:
+    blur(10px);
+
+  font-size:
+    0.72rem;
+
+  font-weight:
+    750;
+
+  white-space:
+    nowrap;
+
+  cursor:
+    pointer;
+
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    transform 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.post-game-hub-link:hover {
+  background:
+    rgba(255, 90, 54, 0.9);
+
+  border-color:
+    rgba(255, 255, 255, 0.25);
+
+  transform:
+    translateY(-1px);
+
+  box-shadow:
+    0 8px 24px
+    rgba(255, 90, 54, 0.2);
+}
+
+.post-game-hub-icon {
+  flex-shrink: 0;
+
+  font-size:
+    0.78rem;
+}
+
+.post-game-hub-link > span:nth-child(2) {
+  overflow: hidden;
+
+  text-overflow:
+    ellipsis;
+}
+
+.post-game-hub-arrow {
+  flex-shrink: 0;
+
+  color:
+    rgba(255, 255, 255, 0.7);
+
+  font-size:
+    1rem;
+}
+
+
+/* ==================================================
+   CLICKABLE TRENDING GAMES
+================================================== */
+
+.trending-game-button {
+  width: 100%;
+
+  color: inherit;
+
+  background:
+    transparent;
+
+  border-top: 0;
+  border-right: 0;
+  border-left: 0;
+
+  text-align:
+    left;
+
+  cursor:
+    pointer;
+}
+
+.trending-game-button:hover {
+  background:
+    rgba(255, 90, 54, 0.055);
+}
+
+.trending-game-arrow {
+  flex-shrink: 0;
+
+  margin-left: auto;
+
+  color:
+    var(--muted-2);
+
+  font-size:
+    1.15rem;
+
+  transition:
+    color 150ms ease,
+    transform 150ms ease;
+}
+
+.trending-game-button:hover
+.trending-game-arrow {
+  color:
+    var(--accent);
+
+  transform:
+    translateX(2px);
+}
+
+/* ==================================================
+   GAME HUB V2 ACTIONS
+================================================== */
+
+.game-hub-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.hub-create-post-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0.58rem 0.9rem;
+
+  color: #fff;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--accent),
+      var(--accent-strong)
+    );
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.12);
+
+  border-radius: 9px;
+
+  box-shadow:
+    0 8px 24px
+    rgba(255, 90, 54, 0.16);
+
+  font-size: 0.75rem;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    filter 150ms ease;
+}
+
+.hub-create-post-btn:hover {
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 10px 28px
+    rgba(255, 90, 54, 0.25);
+
+  filter: brightness(1.07);
+}
+
+.hub-create-post-btn:active {
+  transform:
+    translateY(0)
+    scale(0.98);
+}
+
+
+/* ==================================================
+   CREATE POST MODAL V2
+================================================== */
+
+.post-create-modal {
+  width: min(560px, calc(100vw - 2rem));
+
+  padding: 1.7rem;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.025),
+      transparent 45%
+    ),
+    #0d0d0e;
+
+  border:
+    1px solid var(--line);
+
+  border-radius: 16px;
+
+  box-shadow:
+    0 30px 90px
+    rgba(0, 0, 0, 0.65);
+}
+
+.post-create-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 1rem;
+
+  margin-bottom: 1.4rem;
+}
+
+.post-create-header h2 {
+  margin: 0;
+
+  color: var(--text);
+
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.post-create-header p {
+  margin: 0.3rem 0 0;
+
+  color: var(--muted);
+
+  font-size: 0.78rem;
+}
+
+.post-create-header p span {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.post-create-close {
+  display: grid;
+  place-items: center;
+
+  width: 32px;
+  height: 32px;
+
+  flex-shrink: 0;
+
+  color: var(--muted);
+
+  background:
+    rgba(255,255,255,.025);
+
+  border:
+    1px solid var(--line);
+
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  transition:
+    color 150ms ease,
+    background 150ms ease,
+    border-color 150ms ease;
+}
+
+.post-create-close:hover {
+  color: #fff;
+
+  background:
+    rgba(255, 90, 54, .08);
+
+  border-color:
+    rgba(255, 90, 54, .3);
+}
+
+
+/* ==================================================
+   CREATE POST FORM
+================================================== */
+
+.post-create-form {
+  display: flex;
+  flex-direction: column;
+
+  gap: 1rem;
+}
+
+.post-create-field {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.42rem;
+}
+
+.post-create-field > span {
+  color: var(--muted);
+
+  font-size: 0.7rem;
+  font-weight: 800;
+
+  letter-spacing: 0.07em;
+
+  text-transform: uppercase;
+}
+
+.post-create-field b {
+  margin-left: 0.2rem;
+
+  color: var(--accent);
+}
+
+.post-create-field input,
+.post-create-field textarea {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding:
+    0.72rem
+    0.85rem;
+
+  color: var(--text);
+
+  background:
+    rgba(5, 5, 5, 0.7);
+
+  border:
+    1px solid var(--line);
+
+  border-radius: 9px;
+
+  outline: none;
+
+  font-family: inherit;
+  font-size: 0.88rem;
+
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    background 150ms ease;
+}
+
+.post-create-field textarea {
+  resize: vertical;
+
+  min-height: 110px;
+}
+
+.post-create-field input:focus,
+.post-create-field textarea:focus {
+  background:
+    rgba(8, 8, 8, .92);
+
+  border-color:
+    rgba(255, 90, 54, .48);
+
+  box-shadow:
+    0 0 0 3px
+    rgba(255, 90, 54, .07);
+}
+
+
+/* ==================================================
+   GAME SEARCH
+================================================== */
+
+.post-game-search {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.45rem;
+}
+
+.post-game-searching {
+  padding-left: 0.2rem;
+
+  color: var(--muted-2);
+
+  font-size: 0.72rem;
+}
+
+.post-game-results {
+  display: flex;
+
+  gap: 0.55rem;
+
+  padding:
+    0.15rem
+    0
+    0.35rem;
+
+  overflow-x: auto;
+}
+
+.post-game-results::-webkit-scrollbar {
+  height: 5px;
+}
+
+.post-game-result {
+  flex-shrink: 0;
+
+  width: 100px;
+
+  overflow: hidden;
+
+  padding: 0.4rem;
+
+  color: inherit;
+
+  background:
+    var(--panel-2);
+
+  border:
+    1px solid var(--line);
+
+  border-radius: 9px;
+
+  cursor: pointer;
+
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    transform 150ms ease;
+}
+
+.post-game-result:hover {
+  background:
+    rgba(255, 90, 54, .04);
+
+  border-color:
+    rgba(255, 90, 54, .32);
+
+  transform:
+    translateY(-1px);
+}
+
+.post-game-result img,
+.post-game-result-placeholder {
+  display: block;
+
+  width: 100%;
+  height: 58px;
+
+  object-fit: cover;
+
+  border-radius: 6px;
+}
+
+.post-game-result-placeholder {
+  display: grid;
+  place-items: center;
+
+  background:
+    var(--panel-3);
+}
+
+.post-game-result span {
+  display: -webkit-box;
+
+  margin-top: 0.38rem;
+
+  overflow: hidden;
+
+  color: var(--text-soft);
+
+  font-size: 0.67rem;
+  font-weight: 700;
+
+  line-height: 1.25;
+
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+
+/* ==================================================
+   SELECTED GAME
+================================================== */
+
+.selected-game-card {
+  position: relative;
+
+  min-height: 120px;
+
+  overflow: hidden;
+
+  background:
+    var(--panel-2);
+
+  border:
+    1px solid
+    rgba(255, 90, 54, .22);
+
+  border-radius: 12px;
+}
+
+.selected-game-card > img {
+  display: block;
+
+  width: 100%;
+  height: 135px;
+
+  object-fit: cover;
+
+  opacity: .66;
+}
+
+.selected-game-overlay {
+  position: absolute;
+
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.1rem;
+
+  padding:
+    1.5rem
+    1rem
+    0.75rem;
+
+  background:
+    linear-gradient(
+      transparent,
+      rgba(8, 8, 8, .96)
+    );
+}
+
+.selected-game-overlay span {
+  color: var(--accent);
+
+  font-size: 0.62rem;
+  font-weight: 800;
+
+  letter-spacing: 0.08em;
+
+  text-transform: uppercase;
+}
+
+.selected-game-overlay strong {
+  color: #fff;
+
+  font-size: 0.86rem;
+}
+
+.selected-game-remove {
+  position: absolute;
+
+  top: 0.55rem;
+  right: 0.55rem;
+
+  padding:
+    0.3rem
+    0.5rem;
+
+  color:
+    var(--text-soft);
+
+  background:
+    rgba(0, 0, 0, .72);
+
+  border:
+    1px solid
+    rgba(255,255,255,.12);
+
+  border-radius: 7px;
+
+  font-size: 0.66rem;
+
+  cursor: pointer;
+}
+
+
+/* ==================================================
+   CREATE POST ACTIONS
+================================================== */
+
+.post-create-actions {
+  display: flex;
+
+  gap: 0.7rem;
+
+  margin-top: 0.2rem;
+}
+
+.post-create-publish {
+  flex: 1;
+
+  padding: 0.78rem;
+
+  color: #fff;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--accent),
+      var(--accent-strong)
+    );
+
+  border: 0;
+
+  border-radius: 9px;
+
+  font-size: 0.82rem;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    filter 150ms ease,
+    transform 150ms ease,
+    opacity 150ms ease;
+}
+
+.post-create-publish:hover:not(:disabled) {
+  filter: brightness(1.08);
+
+  transform:
+    translateY(-1px);
+}
+
+.post-create-publish:disabled {
+  opacity: .35;
+
+  cursor: not-allowed;
+}
+
+.post-create-cancel {
+  padding:
+    0.78rem
+    1.1rem;
+
+  color:
+    var(--muted);
+
+  background:
+    transparent;
+
+  border:
+    1px solid
+    var(--line);
+
+  border-radius: 9px;
+
+  font-size: 0.8rem;
+
+  cursor: pointer;
+
+  transition:
+    color 150ms ease,
+    border-color 150ms ease;
+}
+
+.post-create-cancel:hover {
+  color: var(--text);
+
+  border-color:
+    var(--line-strong);
+}
+
+
+/* ==================================================
+   CREATE POST MOBILE
+================================================== */ 
+
+@media (max-width: 600px) {
+  .post-create-modal {
+    padding: 1.2rem;
+  }
+
+  .post-create-actions {
+    flex-direction: column;
+  }
+
+  .post-create-cancel {
+    width: 100%;
+  }
+}
+
+/* ==================================================
+   GAME HUB COMMUNITY BUTTON
+================================================== */
+
+.hub-join-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 132px;
+
+  padding:
+    0.58rem
+    0.9rem;
+
+  color:
+    var(--text-soft);
+
+  background:
+    rgba(
+      10,
+      10,
+      10,
+      0.72
+    );
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.14
+    );
+
+  border-radius:
+    9px;
+
+  backdrop-filter:
+    blur(8px);
+
+  -webkit-backdrop-filter:
+    blur(8px);
+
+  font-size:
+    0.75rem;
+
+  font-weight:
+    800;
+
+  cursor:
+    pointer;
+
+  transition:
+    color 150ms ease,
+    background 150ms ease,
+    border-color 150ms ease,
+    transform 150ms ease,
+    box-shadow 150ms ease;
+}
+
+
+.hub-join-btn:hover:not(:disabled) {
+  color:
+    #fff;
+
+  background:
+    rgba(
+      255,
+      90,
+      54,
+      0.1
+    );
+
+  border-color:
+    rgba(
+      255,
+      90,
+      54,
+      0.48
+    );
+
+  box-shadow:
+    0 8px 24px
+    rgba(
+      255,
+      90,
+      54,
+      0.08
+    );
+
+  transform:
+    translateY(-1px);
+}
+
+
+.hub-join-btn.joined {
+  color:
+    #ff9a82;
+
+  background:
+    rgba(
+      255,
+      90,
+      54,
+      0.1
+    );
+
+  border-color:
+    rgba(
+      255,
+      90,
+      54,
+      0.38
+    );
+}
+
+
+.hub-join-btn.joined:hover:not(:disabled) {
+  color:
+    var(--text-soft);
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.035
+    );
+
+  border-color:
+    var(--line-strong);
+}
+
+
+.hub-join-btn:disabled {
+  opacity:
+    0.55;
+
+  cursor:
+    default;
+
+  transform:
+    none;
+}
+
+
+@media (max-width: 500px) {
+  .game-hub-actions {
+    width:
+      100%;
+
+    flex-wrap:
+      wrap;
+  }
+
+  .hub-join-btn,
+  .hub-create-post-btn {
+    flex:
+      1;
+
+    min-width:
+      140px;
+  }
+}

@@ -4,6 +4,7 @@ import { getPosts, voteOnPost } from '../api'
 export default function PostList({
   onOpenPost,
   onOpenProfile,
+  onOpenGameHub,
   session,
   onPostsChange
 }) {
@@ -137,12 +138,10 @@ export default function PostList({
     let optimisticDownvotes =
       currentDownvotes
 
-    // Clicking the same vote again removes it.
     if (
       currentVote === voteType
     ) {
-      optimisticVote =
-        null
+      optimisticVote = null
 
       if (
         voteType === 'up'
@@ -161,7 +160,6 @@ export default function PostList({
       }
     }
 
-    // Switching from upvote to downvote.
     else if (
       currentVote === 'up' &&
       voteType === 'down'
@@ -176,7 +174,6 @@ export default function PostList({
         currentDownvotes + 1
     }
 
-    // Switching from downvote to upvote.
     else if (
       currentVote === 'down' &&
       voteType === 'up'
@@ -191,7 +188,6 @@ export default function PostList({
         currentUpvotes + 1
     }
 
-    // Brand-new vote.
     else if (
       voteType === 'up'
     ) {
@@ -204,22 +200,15 @@ export default function PostList({
         currentDownvotes + 1
     }
 
-    // ----------------------------------------------
-    // UPDATE UI IMMEDIATELY
-    // ----------------------------------------------
-
     setPosts(prev =>
       prev.map(item =>
         item.id === post.id
           ? {
               ...item,
-
               myVote:
                 optimisticVote,
-
               liveUpvotes:
                 optimisticUpvotes,
-
               liveDownvotes:
                 optimisticDownvotes
             }
@@ -238,22 +227,15 @@ export default function PostList({
           voteType
         )
 
-      // ----------------------------------------------
-      // SYNC WITH EXACT SERVER RESULT
-      // ----------------------------------------------
-
       setPosts(prev =>
         prev.map(item =>
           item.id === post.id
             ? {
                 ...item,
-
                 myVote:
                   result.vote,
-
                 liveUpvotes:
                   result.liveUpvotes,
-
                 liveDownvotes:
                   result.liveDownvotes
               }
@@ -265,10 +247,6 @@ export default function PostList({
         'Vote failed:',
         error
       )
-
-      // ----------------------------------------------
-      // ROLLBACK IF SERVER FAILED
-      // ----------------------------------------------
 
       setPosts(prev =>
         prev.map(item =>
@@ -289,6 +267,31 @@ export default function PostList({
     }
   }
 
+  const openGame =
+    (e, post) => {
+      e.stopPropagation()
+
+      if (
+        !post.game_name ||
+        !onOpenGameHub
+      ) {
+        return
+      }
+
+      onOpenGameHub({
+        id:
+          post.game_id ||
+          null,
+
+        name:
+          post.game_name,
+
+        gameArtUrl:
+          post.game_art_url ||
+          null
+      })
+    }
+
   if (loading) {
     return (
       <div className="global-loading">
@@ -307,14 +310,18 @@ export default function PostList({
             placeholder="Search by game..."
             value={search}
             onChange={e =>
-              setSearch(e.target.value)
+              setSearch(
+                e.target.value
+              )
             }
           />
 
           <select
             value={sortBy}
             onChange={e =>
-              setSortBy(e.target.value)
+              setSortBy(
+                e.target.value
+              )
             }
           >
             <option value="created_at">
@@ -349,14 +356,18 @@ export default function PostList({
           placeholder="Search by game..."
           value={search}
           onChange={e =>
-            setSearch(e.target.value)
+            setSearch(
+              e.target.value
+            )
           }
         />
 
         <select
           value={sortBy}
           onChange={e =>
-            setSortBy(e.target.value)
+            setSortBy(
+              e.target.value
+            )
           }
         >
           <option value="created_at">
@@ -378,116 +389,169 @@ export default function PostList({
       </div>
 
       <ul className="posts">
-        {posts.map((post, index) => (
-          <li
-            key={post.id}
-            className="post-card"
-            onClick={() =>
-              onOpenPost(post)
-            }
-          >
-            <div className="post-meta">
-              <span
-                className="author-link"
-                onClick={e => {
-                  e.stopPropagation()
+        {posts.map(
+          (post, index) => (
+            <li
+              key={post.id}
+              className="post-card"
+              onClick={() =>
+                onOpenPost(post)
+              }
+            >
+              <div className="post-meta">
+                <span
+                  className="author-link"
+                  onClick={e => {
+                    e.stopPropagation()
 
-                  onOpenProfile(
-                    post.user_id
-                  )
+                    onOpenProfile(
+                      post.user_id
+                    )
+                  }}
+                >
+                  {post.name}
+                </span>
+
+                {' • '}
+
+                {new Date(
+                  post.created_at
+                ).toLocaleString()}
+              </div>
+
+              <h3>
+                {post.title}
+              </h3>
+
+              {post.game_art_url && (
+                <div className="post-game-media">
+                  <img
+                    src={
+                      post.game_art_url
+                    }
+                    alt={
+                      post.game_name ||
+                      'Game'
+                    }
+                    className="post-game-image"
+                    loading={
+                      index < 3
+                        ? 'eager'
+                        : 'lazy'
+                    }
+                    fetchPriority={
+                      index === 0
+                        ? 'high'
+                        : 'auto'
+                    }
+                  />
+
+                  {post.game_name && (
+                    <button
+                      className="post-game-hub-link"
+                      onClick={e =>
+                        openGame(
+                          e,
+                          post
+                        )
+                      }
+                    >
+                      <span className="post-game-hub-icon">
+                        🎮
+                      </span>
+
+                      <span>
+                        {
+                          post.game_name
+                        }
+                      </span>
+
+                      <span className="post-game-hub-arrow">
+                        ›
+                      </span>
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <div
+                style={{
+                  display:
+                    'flex',
+
+                  alignItems:
+                    'center',
+
+                  gap:
+                    '0.5rem',
+
+                  marginTop:
+                    '0.5rem'
                 }}
               >
-                {post.name}
-              </span>
+                <button
+                  className={
+                    `upvote-btn${
+                      post.myVote ===
+                      'up'
+                        ? ' active'
+                        : ''
+                    }`
+                  }
+                  onClick={e =>
+                    handleVote(
+                      e,
+                      post,
+                      'up'
+                    )
+                  }
+                  disabled={
+                    !uid ||
+                    votingId ===
+                      post.id
+                  }
+                >
+                  ▲{' '}
+                  {
+                    getUpvoteCount(
+                      post
+                    )
+                  }
+                </button>
 
-              {' • '}
-
-              {new Date(
-                post.created_at
-              ).toLocaleString()}
-            </div>
-
-            <h3>
-              {post.title}
-            </h3>
-
-            {post.game_art_url && (
-              <img
-                src={post.game_art_url}
-                alt={
-                  post.game_name ||
-                  'Game'
-                }
-                className="post-game-image"
-                loading={
-                  index < 3
-                    ? 'eager'
-                    : 'lazy'
-                }
-                fetchPriority={
-                  index === 0
-                    ? 'high'
-                    : 'auto'
-                }
-              />
-            )}
-
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                marginTop: '0.5rem'
-              }}
-            >
-              <button
-                className={
-                  `upvote-btn${
-                    post.myVote === 'up'
-                      ? ' active'
-                      : ''
-                  }`
-                }
-                onClick={e =>
-                  handleVote(
-                    e,
-                    post,
-                    'up'
-                  )
-                }
-                disabled={
-                  !uid ||
-                  votingId === post.id
-                }
-              >
-                ▲ {getUpvoteCount(post)}
-              </button>
-
-              <button
-                className={
-                  `downvote-btn${
-                    post.myVote === 'down'
-                      ? ' active'
-                      : ''
-                  }`
-                }
-                onClick={e =>
-                  handleVote(
-                    e,
-                    post,
-                    'down'
-                  )
-                }
-                disabled={
-                  !uid ||
-                  votingId === post.id
-                }
-              >
-                ▼ {getDownvoteCount(post)}
-              </button>
-            </div>
-          </li>
-        ))}
+                <button
+                  className={
+                    `downvote-btn${
+                      post.myVote ===
+                      'down'
+                        ? ' active'
+                        : ''
+                    }`
+                  }
+                  onClick={e =>
+                    handleVote(
+                      e,
+                      post,
+                      'down'
+                    )
+                  }
+                  disabled={
+                    !uid ||
+                    votingId ===
+                      post.id
+                  }
+                >
+                  ▼{' '}
+                  {
+                    getDownvoteCount(
+                      post
+                    )
+                  }
+                </button>
+              </div>
+            </li>
+          )
+        )}
       </ul>
     </div>
   )

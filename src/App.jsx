@@ -21,6 +21,7 @@ import {
 
 import PostList from './components/PostList'
 import RightSidebar from './components/RightSidebar'
+import GameHub from './components/GameHub'
 import PostModal from './components/PostModal'
 import PostPage from './components/PostPage'
 import ProfilePage from './components/ProfilePage'
@@ -34,40 +35,65 @@ import './App.css'
 
 
 export default function App() {
-  const [showModal, setShowModal] =
-    useState(false)
+  const [
+    showModal,
+    setShowModal
+  ] = useState(false)
 
-  const [activePost, setActivePost] =
-    useState(null)
+  const [
+    activePost,
+    setActivePost
+  ] = useState(null)
 
   const [
     sidebarPosts,
     setSidebarPosts
   ] = useState([])
 
-  const [activePage, setActivePage] =
-    useState('feed')
+  const [
+    activeGame,
+    setActiveGame
+  ] = useState(null)
 
-  const [activeUserId, setActiveUserId] =
-    useState(null)
+  const [
+    activePage,
+    setActivePage
+  ] = useState('feed')
 
-  const [session, setSession] =
-    useState(null)
+  const [
+    activeUserId,
+    setActiveUserId
+  ] = useState(null)
 
-  const [authMode, setAuthMode] =
-    useState(null)
+  const [
+    session,
+    setSession
+  ] = useState(null)
 
-  const [menuOpen, setMenuOpen] =
-    useState(false)
+  const [
+    authMode,
+    setAuthMode
+  ] = useState(null)
 
-  const [showSettings, setShowSettings] =
-    useState(false)
+  const [
+    menuOpen,
+    setMenuOpen
+  ] = useState(false)
 
-  const [showInbox, setShowInbox] =
-    useState(false)
+  const [
+    showSettings,
+    setShowSettings
+  ] = useState(false)
 
-  const [showMessages, setShowMessages] =
-    useState(false)
+  const [
+    showInbox,
+    setShowInbox
+  ] = useState(false)
+
+  const [
+    showMessages,
+    setShowMessages
+  ] = useState(false)
 
   const [
     pendingFriendCount,
@@ -84,8 +110,10 @@ export default function App() {
     setUnreadMsgCount
   ] = useState(0)
 
+
   const menuRef =
     useRef(null)
+
 
   const pendingCount =
     pendingFriendCount +
@@ -94,8 +122,6 @@ export default function App() {
 
   // ==================================================
   // AUTH SESSION
-  //
-  // Cognito is now the only auth provider.
   // ==================================================
 
   useEffect(() => {
@@ -149,8 +175,6 @@ export default function App() {
 
   // ==================================================
   // BACKEND AUTH TEST
-  //
-  // Temporary while Cognito auth is being verified.
   // ==================================================
 
   useEffect(() => {
@@ -187,10 +211,6 @@ export default function App() {
 
   // ==================================================
   // HEADER COUNTS
-  //
-  // FRIEND REQUESTS -> AWS
-  // NOTIFICATIONS   -> AWS
-  // MESSAGES        -> AWS
   // ==================================================
 
   useEffect(() => {
@@ -238,12 +258,9 @@ export default function App() {
 
     loadCounts()
 
-    // Temporary until WebSockets.
     const awsPoll =
       setInterval(
-        () => {
-          loadCounts()
-        },
+        loadCounts,
         2000
       )
 
@@ -273,7 +290,7 @@ export default function App() {
 
 
   // ==================================================
-  // CLOSE MENU WHEN CLICKING OUTSIDE
+  // CLOSE MENU OUTSIDE
   // ==================================================
 
   useEffect(() => {
@@ -346,18 +363,99 @@ export default function App() {
       setActivePage('feed')
       setActivePost(null)
       setActiveUserId(null)
+      setActiveGame(null)
     }
 
 
   // ==================================================
-  // GO HOME
+  // HOME
   // ==================================================
 
-  const goHome = () => {
-    setActivePage('feed')
-    setActivePost(null)
-    setActiveUserId(null)
-  }
+  const goHome =
+    () => {
+      setActivePage('feed')
+      setActivePost(null)
+      setActiveUserId(null)
+      setActiveGame(null)
+
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      })
+    }
+
+
+  // ==================================================
+  // GAME HUB
+  // ==================================================
+
+  const openGameHub =
+    game => {
+      if (!game) {
+        return
+      }
+
+      const normalizedGame = {
+        id:
+          game.id ??
+          game.game_id ??
+          null,
+
+        name:
+          game.name ??
+          game.game_name ??
+          'Unknown Game',
+
+        gameArtUrl:
+          game.gameArtUrl ??
+          game.game_art_url ??
+          game.background_image ??
+          null
+      }
+
+      setActiveGame(
+        normalizedGame
+      )
+
+      setActivePost(null)
+      setActiveUserId(null)
+      setActivePage('feed')
+
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      })
+    }
+
+
+  const closeGameHub =
+    () => {
+      setActiveGame(null)
+      setActivePost(null)
+      setActivePage('feed')
+
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      })
+    }
+
+
+  // ==================================================
+  // OPEN POST
+  // ==================================================
+
+  const openPost =
+    post => {
+      setActivePost(
+        post
+      )
+
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      })
+    }
 
 
   // ==================================================
@@ -385,6 +483,32 @@ export default function App() {
       }
 
       setActivePost(null)
+
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      })
+    }
+
+
+  // ==================================================
+  // OPEN OWN PROFILE
+  // ==================================================
+
+  const openOwnProfile =
+    () => {
+      setActivePage(
+        'profile'
+      )
+
+      setActivePost(null)
+      setActiveGame(null)
+      setActiveUserId(null)
+
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      })
     }
 
 
@@ -399,12 +523,14 @@ export default function App() {
 
 
   // ==================================================
-  // OPEN POST FROM NOTIFICATION
+  // NOTIFICATION POST
   // ==================================================
 
   const handleNotificationPost =
     postId => {
       setShowInbox(false)
+
+      setActiveGame(null)
 
       setActivePost({
         id: postId
@@ -412,11 +538,16 @@ export default function App() {
 
       setActivePage('feed')
       setActiveUserId(null)
+
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      })
     }
 
 
   // ==================================================
-  // NOTIFICATIONS WERE READ
+  // NOTIFICATIONS READ
   // ==================================================
 
   const handleNotificationsRead =
@@ -425,13 +556,45 @@ export default function App() {
     }
 
 
+  // ==================================================
+  // CREATE POST
+  // ==================================================
+
+  const handlePostCreated =
+    post => {
+      setShowModal(false)
+
+      setActivePost(
+        post
+      )
+
+      setActivePage(
+        'feed'
+      )
+
+      /*
+        IMPORTANT:
+
+        We intentionally DO NOT clear
+        activeGame here.
+
+        If the post was created inside
+        a Game Hub, pressing Back from
+        the post returns to that hub.
+      */
+    }
+
+
   return (
     <>
+
       <header>
+
         <div
           className="header-left"
           ref={menuRef}
         >
+
           <button
             className="hamburger-btn"
             onClick={() =>
@@ -446,6 +609,7 @@ export default function App() {
             <span />
           </button>
 
+
           {session && (
             <button
               className="msg-nav-btn"
@@ -456,61 +620,81 @@ export default function App() {
             >
               💬
 
-              {unreadMsgCount > 0 && (
-                <span
-                  className="msg-nav-dot"
-                />
+              {unreadMsgCount >
+                0 && (
+                <span className="msg-nav-dot" />
               )}
             </button>
           )}
 
+
           {menuOpen && (
             <div className="hamburger-menu">
+
               {session && (
                 <button
                   className="hamburger-menu-item"
                   onClick={() => {
-                    setMenuOpen(false)
-                    setShowInbox(true)
+                    setMenuOpen(
+                      false
+                    )
+
+                    setShowInbox(
+                      true
+                    )
                   }}
                 >
                   📬 Inbox
 
-                  {pendingCount > 0 && (
-                    <span
-                      className="inbox-badge"
-                    >
-                      {pendingCount}
+                  {pendingCount >
+                    0 && (
+                    <span className="inbox-badge">
+                      {
+                        pendingCount
+                      }
                     </span>
                   )}
                 </button>
               )}
 
+
               <button
                 className="hamburger-menu-item"
                 onClick={() => {
-                  setMenuOpen(false)
-                  setShowSettings(true)
+                  setMenuOpen(
+                    false
+                  )
+
+                  setShowSettings(
+                    true
+                  )
                 }}
               >
                 ⚙️ Settings
               </button>
+
             </div>
           )}
+
         </div>
+
 
         <h1
           style={{
-            cursor: 'pointer'
+            cursor:
+              'pointer'
           }}
           onClick={goHome}
         >
           NestPlay
         </h1>
 
+
         <div className="header-right">
+
           {!session ? (
             <>
+
               <button
                 className="btn-ghost"
                 onClick={() =>
@@ -522,6 +706,7 @@ export default function App() {
                 Login
               </button>
 
+
               <button
                 className="btn-primary"
                 onClick={() =>
@@ -532,17 +717,22 @@ export default function App() {
               >
                 Sign Up
               </button>
+
             </>
           ) : (
             <>
+
               <button
                 className="btn-primary"
                 onClick={() =>
-                  setShowModal(true)
+                  setShowModal(
+                    true
+                  )
                 }
               >
                 Create Post
               </button>
+
 
               <button
                 className="btn-ghost"
@@ -553,17 +743,12 @@ export default function App() {
                 Logout
               </button>
 
+
               <span
                 className="username-link"
-                onClick={() => {
-                  setActivePage(
-                    'profile'
-                  )
-
-                  setActivePost(
-                    null
-                  )
-                }}
+                onClick={
+                  openOwnProfile
+                }
               >
                 {
                   session.user
@@ -572,24 +757,43 @@ export default function App() {
                   session.user.email
                 }
               </span>
+
             </>
           )}
+
         </div>
+
       </header>
+
 
       <div className="app-root">
         <main>
+
+
+          {/* ==========================================
+              MY PROFILE
+          ========================================== */}
+
           {activePage ===
             'profile' &&
             session && (
               <ProfilePage
-                session={session}
-                onBack={goHome}
+                session={
+                  session
+                }
+                onBack={
+                  goHome
+                }
                 onOpenProfile={
                   openUserProfile
                 }
               />
             )}
+
+
+          {/* ==========================================
+              PUBLIC PROFILE
+          ========================================== */}
 
           {activePage ===
             'publicProfile' &&
@@ -598,10 +802,18 @@ export default function App() {
                 userId={
                   activeUserId
                 }
-                session={session}
-                onBack={goHome}
+                session={
+                  session
+                }
+                onBack={
+                  goHome
+                }
                 onOpenPost={
                   post => {
+                    setActiveGame(
+                      null
+                    )
+
                     setActivePost(
                       post
                     )
@@ -609,6 +821,12 @@ export default function App() {
                     setActivePage(
                       'feed'
                     )
+
+                    window.scrollTo({
+                      top: 0,
+                      behavior:
+                        'smooth'
+                    })
                   }
                 }
                 onOpenProfile={
@@ -617,41 +835,77 @@ export default function App() {
               />
             )}
 
+
+          {/* ==========================================
+              NORMAL FEED
+          ========================================== */}
+
           {activePage ===
             'feed' &&
-            !activePost && (
+            !activePost &&
+            !activeGame && (
               <div className="feed-layout">
+
                 <section className="feed-main">
+
                   <PostList
                     onOpenPost={
-                      post =>
-                        setActivePost(
-                          post
-                        )
+                      openPost
                     }
                     onOpenProfile={
                       openUserProfile
                     }
-                    session={session}
+                    onOpenGameHub={
+                      openGameHub
+                    }
+                    session={
+                      session
+                    }
                     onPostsChange={
                       setSidebarPosts
                     }
                   />
+
                 </section>
+
 
                 <RightSidebar
                   posts={
                     sidebarPosts
                   }
                   onOpenPost={
-                    post =>
-                      setActivePost(
-                        post
-                      )
+                    openPost
+                  }
+                  onOpenGameHub={
+                    openGameHub
                   }
                 />
+
               </div>
             )}
+
+
+          {/* ==========================================
+              GAME HUB
+          ========================================== */}
+
+          {activePage === 'feed' &&
+            !activePost &&
+            activeGame && (
+              <GameHub
+                game={activeGame}
+                session={session}
+                onBack={closeGameHub}
+                onOpenPost={openPost}
+                onOpenProfile={openUserProfile}
+                onCreatePost={() => setShowModal(true)}
+                onJoinRequiresAuth={() => setAuthMode('login')}
+              />
+            )}
+
+          {/* ==========================================
+              POST PAGE
+          ========================================== */}
 
           {activePage ===
             'feed' &&
@@ -660,7 +914,9 @@ export default function App() {
                 postId={
                   activePost.id
                 }
-                session={session}
+                session={
+                  session
+                }
                 onBack={() =>
                   setActivePost(
                     null
@@ -671,28 +927,48 @@ export default function App() {
                 }
               />
             )}
+
         </main>
       </div>
 
+
+      {/* ==========================================
+          CREATE POST MODAL
+      ========================================== */}
+
       {showModal && (
         <PostModal
-          session={session}
-          onClose={() =>
-            setShowModal(false)
+          session={
+            session
           }
-          onCreated={post => {
-            setShowModal(false)
-            setActivePost(post)
-            setActivePage('feed')
-          }}
+          initialGame={
+            activeGame
+          }
+          onClose={() =>
+            setShowModal(
+              false
+            )
+          }
+          onCreated={
+            handlePostCreated
+          }
         />
       )}
 
+
+      {/* ==========================================
+          AUTH
+      ========================================== */}
+
       {authMode && (
         <AuthModal
-          mode={authMode}
+          mode={
+            authMode
+          }
           onClose={() =>
-            setAuthMode(null)
+            setAuthMode(
+              null
+            )
           }
           onAuthSuccess={
             handleAuthSuccess
@@ -700,20 +976,38 @@ export default function App() {
         />
       )}
 
+
+      {/* ==========================================
+          SETTINGS
+      ========================================== */}
+
       {showSettings && (
         <SettingsModal
           onClose={() =>
-            setShowSettings(false)
+            setShowSettings(
+              false
+            )
           }
-          session={session}
+          session={
+            session
+          }
         />
       )}
 
+
+      {/* ==========================================
+          INBOX
+      ========================================== */}
+
       {showInbox && (
         <InboxModal
-          session={session}
+          session={
+            session
+          }
           onClose={() =>
-            setShowInbox(false)
+            setShowInbox(
+              false
+            )
           }
           onOpenPost={
             handleNotificationPost
@@ -724,14 +1018,24 @@ export default function App() {
         />
       )}
 
+
+      {/* ==========================================
+          MESSAGES
+      ========================================== */}
+
       {showMessages && (
         <FriendsPickerModal
-          session={session}
+          session={
+            session
+          }
           onClose={() =>
-            setShowMessages(false)
+            setShowMessages(
+              false
+            )
           }
         />
       )}
+
     </>
   )
 }

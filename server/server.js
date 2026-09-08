@@ -1149,6 +1149,312 @@ app.delete(
   }
 )
 
+// ==================================================
+// GAME HUB COMMUNITIES
+// ==================================================
+
+
+// --------------------------------------------------
+// GET COMMUNITY STATUS
+//
+// Returns:
+// - member count
+// - whether current user joined
+// --------------------------------------------------
+
+app.get(
+  '/api/game-hubs/:gameId',
+  optionalAuth,
+  async (
+    req,
+    res
+  ) => {
+    try {
+      const gameId =
+        String(
+          req.params.gameId || ''
+        ).trim()
+
+      if (!gameId) {
+        return res
+          .status(400)
+          .json({
+            error:
+              'Game ID is required'
+          })
+      }
+
+      const countResult =
+        await pool.query(
+          `
+          SELECT
+            COUNT(*)::int AS count
+
+          FROM game_hub_members
+
+          WHERE game_id = $1
+          `,
+          [
+            gameId
+          ]
+        )
+
+      let joined = false
+
+      if (req.user?.id) {
+        const memberResult =
+          await pool.query(
+            `
+            SELECT 1
+
+            FROM game_hub_members
+
+            WHERE
+              user_id = $1
+              AND game_id = $2
+
+            LIMIT 1
+            `,
+            [
+              req.user.id,
+              gameId
+            ]
+          )
+
+        joined =
+          memberResult.rows.length >
+          0
+      }
+
+      return res.json({
+        gameId,
+
+        memberCount:
+          countResult.rows[0]
+            ?.count || 0,
+
+        joined
+      })
+    } catch (error) {
+      console.error(
+        'Get game hub error:',
+        error
+      )
+
+      return res
+        .status(500)
+        .json({
+          error:
+            error.message
+        })
+    }
+  }
+)
+
+
+// --------------------------------------------------
+// JOIN COMMUNITY
+// --------------------------------------------------
+
+app.post(
+  '/api/game-hubs/:gameId/join',
+  requireAuth,
+  async (
+    req,
+    res
+  ) => {
+    try {
+      const gameId =
+        String(
+          req.params.gameId || ''
+        ).trim()
+
+      const gameName =
+        String(
+          req.body.game_name || ''
+        ).trim()
+
+      const gameArtUrl =
+        req.body.game_art_url ||
+        null
+
+      if (!gameId) {
+        return res
+          .status(400)
+          .json({
+            error:
+              'Game ID is required'
+          })
+      }
+
+      if (!gameName) {
+        return res
+          .status(400)
+          .json({
+            error:
+              'Game name is required'
+          })
+      }
+
+      await ensureProfile(
+        req.user
+      )
+
+      await pool.query(
+        `
+        INSERT INTO game_hub_members (
+          user_id,
+          game_id,
+          game_name,
+          game_art_url
+        )
+
+        VALUES (
+          $1,
+          $2,
+          $3,
+          $4
+        )
+
+        ON CONFLICT (
+          user_id,
+          game_id
+        )
+
+        DO UPDATE SET
+          game_name =
+            EXCLUDED.game_name,
+
+          game_art_url =
+            COALESCE(
+              EXCLUDED.game_art_url,
+              game_hub_members.game_art_url
+            )
+        `,
+        [
+          req.user.id,
+          gameId,
+          gameName,
+          gameArtUrl
+        ]
+      )
+
+      const countResult =
+        await pool.query(
+          `
+          SELECT
+            COUNT(*)::int AS count
+
+          FROM game_hub_members
+
+          WHERE game_id = $1
+          `,
+          [
+            gameId
+          ]
+        )
+
+      return res.json({
+        joined: true,
+
+        memberCount:
+          countResult.rows[0]
+            ?.count || 0
+      })
+    } catch (error) {
+      console.error(
+        'Join game hub error:',
+        error
+      )
+
+      return res
+        .status(500)
+        .json({
+          error:
+            error.message
+        })
+    }
+  }
+)
+
+
+// --------------------------------------------------
+// LEAVE COMMUNITY
+// --------------------------------------------------
+
+app.delete(
+  '/api/game-hubs/:gameId/join',
+  requireAuth,
+  async (
+    req,
+    res
+  ) => {
+    try {
+      const gameId =
+        String(
+          req.params.gameId || ''
+        ).trim()
+
+      if (!gameId) {
+        return res
+          .status(400)
+          .json({
+            error:
+              'Game ID is required'
+          })
+      }
+
+      await pool.query(
+        `
+        DELETE FROM game_hub_members
+
+        WHERE
+          user_id = $1
+          AND game_id = $2
+        `,
+        [
+          req.user.id,
+          gameId
+        ]
+      )
+
+      const countResult =
+        await pool.query(
+          `
+          SELECT
+            COUNT(*)::int AS count
+
+          FROM game_hub_members
+
+          WHERE game_id = $1
+          `,
+          [
+            gameId
+          ]
+        )
+
+      return res.json({
+        joined: false,
+
+        memberCount:
+          countResult.rows[0]
+            ?.count || 0
+      })
+    } catch (error) {
+      console.error(
+        'Leave game hub error:',
+        error
+      )
+
+      return res
+        .status(500)
+        .json({
+          error:
+            error.message
+        })
+    }
+  }
+)
 
 // ==================================================
 // VOTES
