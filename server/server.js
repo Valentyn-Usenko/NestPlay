@@ -27,6 +27,10 @@ const {
   verifyAuthToken
 } = require('./auth')
 
+const {
+  createAchievementService,
+  registerAchievementRoutes
+} = require('./achievements')
 
 const app = express()
 
@@ -258,6 +262,26 @@ async function optionalAuth(
   }
 }
 
+const achievementService =
+  createAchievementService(pool)
+
+registerAchievementRoutes({
+  app,
+  pool,
+  requireAuth,
+  optionalAuth,
+  service:
+    achievementService
+})
+
+achievementService
+  .syncDefinitions()
+  .catch(error => {
+    console.error(
+      'Achievement definition sync failed:',
+      error
+    )
+  })
 
 // ==================================================
 // COGNITO NEW USER BOOTSTRAP
@@ -985,6 +1009,19 @@ app.post(
               null
           ]
         )
+      try {
+        await achievementService
+          .recordPostCreated(
+            pool,
+            req.user.id
+          )
+      } catch (achievementError) {
+        console.error(
+          'Post achievement error:',
+          achievementError
+        )
+      }
+
 
       res
         .status(201)
@@ -1338,6 +1375,24 @@ app.post(
           gameArtUrl
         ]
       )
+
+       try {
+        await achievementService
+          .recordHubJoined(
+            pool,
+            {
+              userId: req.user.id,
+              gameId,
+              gameName,
+              gameArtUrl
+            }
+          )
+      } catch (achievementError) {
+        console.error(
+          'Game Hub achievement error:',
+          achievementError
+        )
+      }
 
       const countResult =
         await pool.query(

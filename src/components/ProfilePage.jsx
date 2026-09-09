@@ -10,6 +10,7 @@ import {
   deleteAvatar
 } from '../api'
 import ChatModal from './ChatModal'
+import ProfileAchievements from './ProfileAchievements'
 
 const AVATAR_COLORS = [
   {
@@ -56,6 +57,7 @@ export default function ProfilePage({
   const [likedPosts, setLikedPosts] = useState([])
   const [friends, setFriends] = useState([])
   const [loading, setLoading] = useState(true)
+  const [profileId, setProfileId] = useState(null)
 
   const [showAllPosts, setShowAllPosts] =
     useState(false)
@@ -237,6 +239,9 @@ export default function ProfilePage({
         }
 
         if (myProfile) {
+          setProfileId(
+            myProfile.id
+          )
           setUsername(
             myProfile.username ||
             session?.user?.user_metadata?.username ||
@@ -670,6 +675,11 @@ export default function ProfilePage({
           </span>
         </div>
       </div>
+
+      <ProfileAchievements
+        userId={profileId}
+        editable={true}
+      />
 
       <div className="profile-posts-section">
         <h3 className="profile-posts-heading">

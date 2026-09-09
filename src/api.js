@@ -444,3 +444,50 @@ export function deleteAvatar() {
     }
   )
 }
+
+// ==================================================
+// ACHIEVEMENTS
+// ==================================================
+
+export function getUserAchievements(
+  userId
+) {
+  return apiFetch(
+    `/api/achievements/users/${encodeURIComponent(
+      userId
+    )}`
+  )
+}
+
+export function setFeaturedAchievements(
+  achievementIds
+) {
+  return apiFetch(
+    '/api/achievements/featured',
+    {
+      method: 'PATCH',
+      body: JSON.stringify({
+        achievementIds
+      })
+    }
+  )
+}
+
+export function getAchievementToasts() {
+  return apiFetch(
+    '/api/achievements/toasts'
+  )
+}
+
+export function markAchievementToastDelivered(
+  notificationId
+) {
+  return apiFetch(
+    `/api/achievements/toasts/${encodeURIComponent(
+      notificationId
+    )}/delivered`,
+    {
+      method: 'PATCH'
+    }
+  )
+}
