@@ -278,14 +278,13 @@ registerAchievementRoutes({
     achievementService
 })
 
-const presenceService =
-  registerPresenceRoutes({
-    app,
-    pool,
-    requireAuth,
-    signProfile:
-      addSignedAvatarUrl
-  })
+registerPresenceRoutes({
+  app,
+  pool,
+  requireAuth,
+  signProfile:
+    addSignedAvatarUrl
+})
 
 achievementService
   .syncDefinitions()

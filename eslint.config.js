@@ -25,5 +25,18 @@ export default defineConfig([
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
+  },  {
+    files: [
+      'server/**/*.{js,cjs}',
+      'infra/**/*.js',
+    ],
+    languageOptions: {
+      globals: globals.node,
+      sourceType: 'commonjs',
+    },
+    rules: {
+      'no-redeclare': 'off',
+    },
   },
+
 ])
