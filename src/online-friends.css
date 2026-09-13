@@ -1,0 +1,314 @@
+/* ==================================================
+   ONLINE FRIENDS — RIGHT SIDEBAR
+   Designed to sit directly below Popular Posts.
+================================================== */
+
+.online-friends-card {
+  width: 100%;
+  padding: 0.9rem;
+  color: var(--text);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.025),
+      rgba(255, 255, 255, 0.012)
+    ),
+    var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.online-friends-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.online-friends-heading {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+}
+
+.online-friends-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 25px;
+  height: 22px;
+  padding: 0 0.4rem;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.online-friends-list,
+.online-friends-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.online-friend-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  gap: 0.68rem;
+  padding: 0.5rem 0.48rem;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    transform 150ms ease;
+}
+
+.online-friend-row:hover,
+.online-friend-row:focus-visible {
+  background: rgba(255, 90, 54, 0.055);
+  outline: none;
+}
+
+.online-friend-row:active {
+  transform: translateY(1px);
+}
+
+.online-friend-avatar-wrap {
+  position: relative;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+}
+
+.online-friend-avatar {
+  display: block;
+  width: 34px;
+  height: 34px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 50%;
+}
+
+.online-friend-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.online-presence-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 10px;
+  height: 10px;
+  background: #43b987;
+  border: 2px solid var(--panel);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 1px rgba(67, 185, 135, 0.14);
+}
+
+.online-friend-copy {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.online-friend-name {
+  overflow: hidden;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.online-friend-status {
+  color: var(--muted-2);
+  font-size: 0.64rem;
+  line-height: 1.2;
+}
+
+.online-friends-empty {
+  margin: 0;
+  padding: 0.72rem 0.38rem 0.35rem;
+  color: var(--muted-2);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.online-friends-more {
+  width: 100%;
+  margin-top: 0.38rem;
+  padding: 0.45rem;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    background 150ms ease;
+}
+
+.online-friends-more:hover,
+.online-friends-more:focus-visible {
+  color: var(--text-soft);
+  background: rgba(255, 255, 255, 0.035);
+  outline: none;
+}
+
+.online-friends-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.48rem;
+  padding: 0.28rem 0.45rem;
+}
+
+.online-friend-skeleton {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  align-items: center;
+  gap: 0.68rem;
+}
+
+.online-friend-skeleton span:first-child {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+}
+
+.online-friend-skeleton span:last-child {
+  width: 68%;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.online-friend-skeleton span {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.035),
+      rgba(255, 255, 255, 0.075),
+      rgba(255, 255, 255, 0.035)
+    );
+  background-size: 220% 100%;
+  animation:
+    online-friend-shimmer 1.45s linear infinite;
+}
+
+@keyframes online-friend-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -20% 0;
+  }
+}
+
+.online-friends-modal-backdrop {
+  position: fixed;
+  z-index: 1400;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.68);
+  backdrop-filter: blur(7px);
+}
+
+.online-friends-modal {
+  width: min(420px, 100%);
+  max-height: min(620px, 82vh);
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.online-friends-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.95rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.online-friends-modal-header > div {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.online-friends-modal-header strong {
+  font-size: 0.9rem;
+}
+
+.online-friends-modal-header span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.online-friends-modal-header button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  place-items: center;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.online-friends-modal-list {
+  max-height: calc(82vh - 62px);
+  overflow-y: auto;
+  padding: 0.55rem;
+}
+
+@media (max-width: 1180px) {
+  /*
+    The existing desktop sidebar is hidden at this
+    breakpoint, so this feature should disappear with it.
+    Do not independently inject it into the mobile feed.
+  */
+  .online-friends-card {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .online-friend-row,
+  .online-friends-more,
+  .online-friend-skeleton span {
+    animation: none !important;
+    transition: none !important;
+  }
+}

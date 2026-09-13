@@ -491,3 +491,17 @@ export function markAchievementToastDelivered(
     }
   )
 }
+export function getPresenceTicket() {
+  return apiFetch(
+    '/api/presence/ticket',
+    {
+      method: 'POST'
+    }
+  )
+}
+
+export function getOnlineFriends() {
+  return apiFetch(
+    '/api/presence/friends'
+  )
+}

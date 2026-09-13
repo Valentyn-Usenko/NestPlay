@@ -1,0 +1,188 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: NestPlay real-time friend presence WebSocket API
+
+Parameters:
+  PresenceBackendUrl:
+    Type: String
+    Description: Existing NestPlay HTTPS API base URL, without trailing slash
+    Default: https://o7qu23z6vl.execute-api.us-east-2.amazonaws.com
+
+  PresenceBridgeKey:
+    Type: String
+    NoEcho: true
+    MinLength: 32
+    Description: Random shared secret also configured as PRESENCE_BRIDGE_KEY on Elastic Beanstalk
+
+  ElasticBeanstalkInstanceRoleName:
+    Type: String
+    Description: EC2 instance role used by the NestPlay Elastic Beanstalk environment
+
+Resources:
+  PresenceBridgeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  PresenceBridgeFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: nodejs22.x
+      Handler: index.handler
+      Role: !GetAtt PresenceBridgeRole.Arn
+      Timeout: 10
+      MemorySize: 128
+      Environment:
+        Variables:
+          PRESENCE_BACKEND_URL: !Ref PresenceBackendUrl
+          PRESENCE_BRIDGE_KEY: !Ref PresenceBridgeKey
+      Code:
+        ZipFile: |
+          const ROUTES = {
+            '$connect': '/api/presence/ws/connect',
+            '$disconnect': '/api/presence/ws/disconnect',
+            heartbeat: '/api/presence/ws/heartbeat'
+          };
+
+          exports.handler = async event => {
+            const routeKey = event?.requestContext?.routeKey;
+            const path = ROUTES[routeKey];
+
+            if (!path) {
+              return { statusCode: 200, body: 'ok' };
+            }
+
+            const payload = {
+              connectionId: event.requestContext.connectionId,
+              domainName: event.requestContext.domainName,
+              stage: event.requestContext.stage,
+              ticket: event.queryStringParameters?.ticket || null
+            };
+
+            try {
+              const response = await fetch(
+                `${process.env.PRESENCE_BACKEND_URL}${path}`,
+                {
+                  method: 'POST',
+                  headers: {
+                    'content-type': 'application/json',
+                    'x-presence-bridge-key': process.env.PRESENCE_BRIDGE_KEY
+                  },
+                  body: JSON.stringify(payload)
+                }
+              );
+
+              const body = await response.text();
+
+              return {
+                statusCode: response.status,
+                body: body || 'ok'
+              };
+            } catch (error) {
+              console.error('Presence bridge request failed:', error);
+              return {
+                statusCode: 502,
+                body: 'Presence backend unavailable'
+              };
+            }
+          };
+
+  PresenceWebSocketApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: NestPlay-presence
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: '$request.body.action'
+
+  PresenceBridgeIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref PresenceWebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationMethod: POST
+      IntegrationUri: !Sub >-
+        arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PresenceBridgeFunction.Arn}/invocations
+
+  PresenceConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref PresenceWebSocketApi
+      RouteKey: '$connect'
+      AuthorizationType: NONE
+      Target: !Sub integrations/${PresenceBridgeIntegration}
+
+  PresenceDisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref PresenceWebSocketApi
+      RouteKey: '$disconnect'
+      AuthorizationType: NONE
+      Target: !Sub integrations/${PresenceBridgeIntegration}
+
+  PresenceHeartbeatRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref PresenceWebSocketApi
+      RouteKey: heartbeat
+      AuthorizationType: NONE
+      Target: !Sub integrations/${PresenceBridgeIntegration}
+
+  PresenceDefaultRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref PresenceWebSocketApi
+      RouteKey: '$default'
+      AuthorizationType: NONE
+      Target: !Sub integrations/${PresenceBridgeIntegration}
+
+  PresenceBridgePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref PresenceBridgeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub >-
+        arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${PresenceWebSocketApi}/*
+
+  PresenceStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref PresenceWebSocketApi
+      StageName: production
+      AutoDeploy: true
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 500
+        ThrottlingRateLimit: 250
+
+  ElasticBeanstalkManageConnectionsPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: NestPlayPresenceManageConnections
+      Roles:
+        - !Ref ElasticBeanstalkInstanceRoleName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - execute-api:ManageConnections
+            Resource: !Sub >-
+              arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${PresenceWebSocketApi}/*
+
+Outputs:
+  PresenceWebSocketUrl:
+    Description: Set this as VITE_PRESENCE_WS_URL in Amplify
+    Value: !Sub >-
+      wss://${PresenceWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/production
+
+  PresenceWebSocketApiId:
+    Value: !Ref PresenceWebSocketApi
