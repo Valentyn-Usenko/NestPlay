@@ -31,6 +31,7 @@ import SettingsModal from './components/SettingsModal'
 import InboxModal from './components/InboxModal'
 import FriendsPickerModal from './components/FriendsPickerModal'
 
+import PresenceConnection from './components/PresenceConnection'
 import './App.css'
 
 
@@ -588,6 +589,10 @@ export default function App() {
   return (
     <>
 
+      <PresenceConnection
+        session={session}
+      />
+
       <header>
 
         <div
@@ -878,6 +883,12 @@ export default function App() {
                   }
                   onOpenGameHub={
                     openGameHub
+                  }
+                  session={
+                    session
+                  }
+                  onOpenProfile={
+                    openUserProfile
                   }
                 />
 

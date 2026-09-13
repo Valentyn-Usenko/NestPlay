@@ -32,6 +32,10 @@ const {
   registerAchievementRoutes
 } = require('./achievements')
 
+const {
+  registerPresenceRoutes
+} = require('./presence')
+
 const app = express()
 
 const PORT =
@@ -273,6 +277,15 @@ registerAchievementRoutes({
   service:
     achievementService
 })
+
+const presenceService =
+  registerPresenceRoutes({
+    app,
+    pool,
+    requireAuth,
+    signProfile:
+      addSignedAvatarUrl
+  })
 
 achievementService
   .syncDefinitions()

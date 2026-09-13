@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react'
+import OnlineFriends from './OnlineFriends'
 
 const getUpvoteCount =
   post => {
@@ -13,7 +14,9 @@ const getUpvoteCount =
 export default function RightSidebar({
   posts = [],
   onOpenPost,
-  onOpenGameHub
+  onOpenGameHub,
+  session,
+  onOpenProfile
 }) {
 
   const trendingGames =
@@ -294,6 +297,14 @@ export default function RightSidebar({
           </div>
         )}
       </div>
+
+      {session && (
+        <OnlineFriends
+          session={session}
+          onOpenProfile={onOpenProfile}
+        />
+      )}
+
 
     </aside>
   )
