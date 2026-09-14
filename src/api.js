@@ -51,13 +51,43 @@ async function apiFetch(path, options = {}) {
 // POSTS
 // ==================================================
 
-export function getPosts(search = '') {
-  const query = search
-    ? `?search=${encodeURIComponent(search)}`
-    : ''
+export function getPosts(
+  search = '',
+  options = {}
+) {
+  const params =
+    new URLSearchParams()
+
+  if (search) {
+    params.set(
+      'search',
+      search
+    )
+  }
+
+  if (options.feed) {
+    params.set(
+      'feed',
+      options.feed
+    )
+  }
+
+  if (options.sort) {
+    params.set(
+      'sort',
+      options.sort
+    )
+  }
+
+  const query =
+    params.toString()
 
   return apiFetch(
-    `/api/posts${query}`
+    `/api/posts${
+      query
+        ? `?${query}`
+        : ''
+    }`
   )
 }
 
@@ -237,6 +267,12 @@ export function getPendingFriendRequests() {
 export function getPendingFriendRequestCount() {
   return apiFetch(
     '/api/friend-requests/pending-count'
+  )
+}
+
+export function getFriendCount() {
+  return apiFetch(
+    '/api/friends/count'
   )
 }
 

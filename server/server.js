@@ -731,6 +731,8 @@ app.get(
 )
 
 
+const { FEED_RANKING } = require('./feedRanking')
+
 // ==================================================
 // POSTS
 // ==================================================
@@ -758,68 +760,322 @@ app.get(
             ).trim()
           : ''
 
+      const requestedFeed =
+        String(
+          req.query.feed ||
+          'home'
+        ).toLowerCase()
+
+      const feed =
+        requestedFeed ===
+        'friends'
+          ? 'friends'
+          : 'home'
+
+      if (
+        feed === 'friends' &&
+        !userId
+      ) {
+        return res
+          .status(401)
+          .json({
+            error:
+              'Authentication required'
+          })
+      }
+
+      const requestedSort =
+        String(
+          req.query.sort ||
+          'recommended'
+        ).toLowerCase()
+
+      let sort =
+        'recommended'
+
+      if (
+        requestedSort ===
+          'created_at' ||
+        requestedSort ===
+          'newest'
+      ) {
+        sort = 'newest'
+      } else if (
+        requestedSort ===
+        'upvotes'
+      ) {
+        sort = 'upvotes'
+      }
+
+      if (
+        feed === 'friends' &&
+        sort === 'recommended'
+      ) {
+        sort = 'newest'
+      }
+
+      const {
+        recencyMax,
+        recencyWindowHours,
+        friendBoost,
+        friendBoostWindowHours,
+        joinedHubBoost,
+        upvoteWeight,
+        downvoteWeight,
+        maxEngagementBoost,
+        maxEngagementPenalty
+      } = FEED_RANKING
+
       const result =
         await pool.query(
           `
-          SELECT
-            p.*,
+          WITH feed_posts AS (
+            SELECT
+              p.*,
 
-            COALESCE(
+              COALESCE(
+                vote_counts.upvotes,
+                0
+              )::int
+                AS "liveUpvotes",
+
+              COALESCE(
+                vote_counts.downvotes,
+                0
+              )::int
+                AS "liveDownvotes",
+
               (
-                SELECT COUNT(*)::int
+                SELECT
+                  v.vote_type
 
                 FROM votes v
 
                 WHERE
                   v.post_id = p.id
-                  AND v.vote_type = 'up'
-              ),
-              0
-            ) AS "liveUpvotes",
+                  AND v.user_id = $1
 
-            COALESCE(
-              (
-                SELECT COUNT(*)::int
+                LIMIT 1
+              ) AS "myVote",
 
-                FROM votes v
+              EXISTS (
+                SELECT 1
+
+                FROM friend_requests fr
 
                 WHERE
-                  v.post_id = p.id
-                  AND v.vote_type = 'down'
-              ),
-              0
-            ) AS "liveDownvotes",
+                  fr.status =
+                    'accepted'
 
-            (
-              SELECT v.vote_type
+                  AND (
+                    (
+                      fr.sender_id = $1
+                      AND
+                      fr.receiver_id =
+                        p.user_id
+                    )
+
+                    OR
+
+                    (
+                      fr.receiver_id = $1
+                      AND
+                      fr.sender_id =
+                        p.user_id
+                    )
+                  )
+              ) AS "isFriend",
+
+              EXISTS (
+                SELECT 1
+
+                FROM game_hub_members ghm
+
+                WHERE
+                  ghm.user_id = $1
+
+                  AND
+                  ghm.game_id =
+                    p.game_id::text
+              ) AS "isJoinedHub"
+
+            FROM posts p
+
+            LEFT JOIN LATERAL (
+              SELECT
+                COUNT(*) FILTER (
+                  WHERE
+                    v.vote_type = 'up'
+                ) AS upvotes,
+
+                COUNT(*) FILTER (
+                  WHERE
+                    v.vote_type = 'down'
+                ) AS downvotes
 
               FROM votes v
 
               WHERE
                 v.post_id = p.id
-                AND v.user_id = $1
+            ) vote_counts
+              ON TRUE
 
-              LIMIT 1
-            ) AS "myVote"
+            WHERE (
+              $2 = ''
 
-          FROM posts p
+              OR p.game_name
+                ILIKE
+                '%' || $2 || '%'
+            )
+          ),
 
-          WHERE (
-            $2 = ''
-            OR p.game_name
-              ILIKE '%' || $2 || '%'
+          scored_posts AS (
+            SELECT
+              fp.*,
+
+              (
+                (
+                  $5::double precision
+                  *
+                  (
+                    1 -
+                    LEAST(
+                      1::double precision,
+
+                      GREATEST(
+                        0::double precision,
+
+                        EXTRACT(
+                          EPOCH FROM (
+                            NOW() -
+                            fp.created_at
+                          )
+                        )
+                        /
+                        3600.0
+                        /
+                        $6::double precision
+                      )
+                    )
+                  )
+                )
+
+                +
+
+                CASE
+                  WHEN fp."isFriend"
+                    THEN
+                      $7::double precision
+                      *
+                      (
+                        1 -
+                        LEAST(
+                          1::double precision,
+
+                          GREATEST(
+                            0::double precision,
+
+                            EXTRACT(
+                              EPOCH FROM (
+                                NOW() -
+                                fp.created_at
+                              )
+                            )
+                            /
+                            3600.0
+                            /
+                            $8::double precision
+                          )
+                        )
+                      )
+                  ELSE
+                    0
+                END
+
+                +
+
+                CASE
+                  WHEN fp."isJoinedHub"
+                    THEN
+                      $9::double precision
+                  ELSE
+                    0
+                END
+
+                +
+
+                LEAST(
+                  $12::double precision,
+
+                  GREATEST(
+                    (
+                      -1 *
+                      $13::double precision
+                    ),
+
+                    (
+                      fp."liveUpvotes"
+                      *
+                      $10::double precision
+                    )
+
+                    -
+
+                    (
+                      fp."liveDownvotes"
+                      *
+                      $11::double precision
+                    )
+                  )
+                )
+              )::double precision
+                AS "feedScore"
+
+            FROM feed_posts fp
+
+            WHERE
+              $3 = 'home'
+              OR fp."isFriend" = TRUE
           )
 
+          SELECT
+            *
+
+          FROM scored_posts
+
           ORDER BY
-            p.created_at DESC
+            CASE
+              WHEN
+                $4 = 'recommended'
+                THEN "feedScore"
+            END DESC,
+
+            CASE
+              WHEN
+                $4 = 'upvotes'
+                THEN "liveUpvotes"
+            END DESC,
+
+            created_at DESC
           `,
           [
             userId,
-            search
+            search,
+            feed,
+            sort,
+            recencyMax,
+            recencyWindowHours,
+            friendBoost,
+            friendBoostWindowHours,
+            joinedHubBoost,
+            upvoteWeight,
+            downvoteWeight,
+            maxEngagementBoost,
+            maxEngagementPenalty
           ]
         )
 
-      res.json(
+      return res.json(
         result.rows
       )
     } catch (error) {
@@ -828,7 +1084,7 @@ app.get(
         error
       )
 
-      res
+      return res
         .status(500)
         .json({
           error:
@@ -2360,6 +2616,61 @@ app.get(
       )
 
       res
+        .status(500)
+        .json({
+          error:
+            error.message
+        })
+    }
+  }
+)
+
+
+// --------------------------------------------------
+// GET FRIEND COUNT
+// --------------------------------------------------
+
+app.get(
+  '/api/friends/count',
+  requireAuth,
+  async (
+    req,
+    res
+  ) => {
+    try {
+      const result =
+        await pool.query(
+          `
+          SELECT
+            COUNT(*)::int AS count
+
+          FROM friend_requests
+
+          WHERE
+            status = 'accepted'
+
+            AND (
+              sender_id = $1
+              OR receiver_id = $1
+            )
+          `,
+          [
+            req.user.id
+          ]
+        )
+
+      return res.json({
+        count:
+          result.rows[0]
+            ?.count || 0
+      })
+    } catch (error) {
+      console.error(
+        'Get friend count error:',
+        error
+      )
+
+      return res
         .status(500)
         .json({
           error:

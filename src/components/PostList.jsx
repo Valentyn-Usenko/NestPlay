@@ -1,5 +1,9 @@
-import React, { useEffect, useState } from 'react'
-import { getPosts, voteOnPost } from '../api'
+﻿import React, { useEffect, useState } from 'react'
+import {
+  getFriendCount,
+  getPosts,
+  voteOnPost
+} from '../api'
 
 export default function PostList({
   onOpenPost,
@@ -10,9 +14,21 @@ export default function PostList({
 }) {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
-  const [sortBy, setSortBy] = useState('created_at')
-  const [search, setSearch] = useState('')
-  const [votingId, setVotingId] = useState(null)
+
+  const [feedMode, setFeedMode] =
+    useState('home')
+
+  const [sortBy, setSortBy] =
+    useState('recommended')
+
+  const [search, setSearch] =
+    useState('')
+
+  const [votingId, setVotingId] =
+    useState(null)
+
+  const [friendCount, setFriendCount] =
+    useState(null)
 
   const [
     lastFetchWasGlobal,
@@ -48,23 +64,44 @@ export default function PostList({
       const cleanSearch =
         search.trim()
 
-      let postsData =
-        await getPosts(cleanSearch)
+      const postsData =
+        await getPosts(
+          cleanSearch,
+          {
+            feed: feedMode,
+            sort: sortBy
+          }
+        )
 
       setLastFetchWasGlobal(
+        feedMode === 'home' &&
         cleanSearch === ''
       )
 
-      if (sortBy === 'upvotes') {
-        postsData =
-          [...postsData].sort(
-            (a, b) =>
-              getUpvoteCount(b) -
-              getUpvoteCount(a)
-          )
-      }
-
       setPosts(postsData)
+
+      if (
+        feedMode === 'friends' &&
+        postsData.length === 0
+      ) {
+        try {
+          const friendData =
+            await getFriendCount()
+
+          setFriendCount(
+            friendData.count ?? 0
+          )
+        } catch (error) {
+          console.error(
+            'Error loading friend count:',
+            error
+          )
+
+          setFriendCount(null)
+        }
+      } else {
+        setFriendCount(null)
+      }
     } catch (error) {
       console.error(
         'Error loading posts:',
@@ -82,12 +119,25 @@ export default function PostList({
   }
 
   useEffect(() => {
+    if (
+      !uid &&
+      feedMode === 'friends'
+    ) {
+      setFeedMode('home')
+      setSortBy('recommended')
+      return
+    }
+
     Promise.resolve().then(() =>
       fetchPosts(true)
     )
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortBy, session])
+  }, [
+    sortBy,
+    session,
+    feedMode
+  ])
 
   useEffect(() => {
     if (
@@ -101,6 +151,25 @@ export default function PostList({
     lastFetchWasGlobal,
     onPostsChange
   ])
+
+  const changeFeedMode =
+    nextMode => {
+      if (
+        nextMode === feedMode
+      ) {
+        return
+      }
+
+      setFeedMode(nextMode)
+
+      if (
+        nextMode === 'friends'
+      ) {
+        setSortBy('newest')
+      } else {
+        setSortBy('recommended')
+      }
+    }
 
   const handleVote = async (
     e,
@@ -158,9 +227,7 @@ export default function PostList({
             currentDownvotes - 1
           )
       }
-    }
-
-    else if (
+    } else if (
       currentVote === 'up' &&
       voteType === 'down'
     ) {
@@ -172,9 +239,7 @@ export default function PostList({
 
       optimisticDownvotes =
         currentDownvotes + 1
-    }
-
-    else if (
+    } else if (
       currentVote === 'down' &&
       voteType === 'up'
     ) {
@@ -186,16 +251,12 @@ export default function PostList({
 
       optimisticUpvotes =
         currentUpvotes + 1
-    }
-
-    else if (
+    } else if (
       voteType === 'up'
     ) {
       optimisticUpvotes =
         currentUpvotes + 1
-    }
-
-    else {
+    } else {
       optimisticDownvotes =
         currentDownvotes + 1
     }
@@ -216,9 +277,7 @@ export default function PostList({
       )
     )
 
-    setVotingId(
-      post.id
-    )
+    setVotingId(post.id)
 
     try {
       const result =
@@ -261,9 +320,7 @@ export default function PostList({
         error.message
       )
     } finally {
-      setVotingId(
-        null
-      )
+      setVotingId(null)
     }
   }
 
@@ -292,65 +349,58 @@ export default function PostList({
       })
     }
 
-  if (loading) {
-    return (
-      <div className="global-loading">
-        <div className="dot" />
-        <div className="dot" />
-        <div className="dot" />
-      </div>
-    )
-  }
+  const controls = (
+    <>
+      <div
+        className="feed-view-tabs"
+        role="tablist"
+        aria-label="Feed view"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={
+            feedMode === 'home'
+          }
+          className={
+            `feed-view-tab${
+              feedMode === 'home'
+                ? ' active'
+                : ''
+            }`
+          }
+          onClick={() =>
+            changeFeedMode('home')
+          }
+        >
+          For You
+        </button>
 
-  if (!posts.length) {
-    return (
-      <>
-        <div className="feed-controls">
-          <input
-            placeholder="Search by game..."
-            value={search}
-            onChange={e =>
-              setSearch(
-                e.target.value
-              )
-            }
-          />
-
-          <select
-            value={sortBy}
-            onChange={e =>
-              setSortBy(
-                e.target.value
-              )
-            }
-          >
-            <option value="created_at">
-              Newest
-            </option>
-
-            <option value="upvotes">
-              Most upvoted
-            </option>
-          </select>
-
+        {uid && (
           <button
+            type="button"
+            role="tab"
+            aria-selected={
+              feedMode === 'friends'
+            }
+            className={
+              `feed-view-tab${
+                feedMode === 'friends'
+                  ? ' active'
+                  : ''
+              }`
+            }
             onClick={() =>
-              fetchPosts(true)
+              changeFeedMode(
+                'friends'
+              )
             }
           >
-            Apply
+            Friends
           </button>
-        </div>
+        )}
+      </div>
 
-        <div className="empty-state">
-          No posts yet — create one!
-        </div>
-      </>
-    )
-  }
-
-  return (
-    <div>
       <div className="feed-controls">
         <input
           placeholder="Search by game..."
@@ -370,7 +420,13 @@ export default function PostList({
             )
           }
         >
-          <option value="created_at">
+          {feedMode === 'home' && (
+            <option value="recommended">
+              Recommended
+            </option>
+          )}
+
+          <option value="newest">
             Newest
           </option>
 
@@ -387,6 +443,53 @@ export default function PostList({
           Apply
         </button>
       </div>
+    </>
+  )
+
+  if (loading) {
+    return (
+      <div>
+        {controls}
+
+        <div className="global-loading">
+          <div className="dot" />
+          <div className="dot" />
+          <div className="dot" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!posts.length) {
+    let emptyMessage =
+      'No posts yet — create one!'
+
+    if (
+      feedMode === 'friends'
+    ) {
+      if (friendCount === 0) {
+        emptyMessage =
+          'You do not have any friends yet. Discover people through Game Hubs and the wider NestPlay community.'
+      } else {
+        emptyMessage =
+          'Nothing new from your friends yet. Explore the For You feed while you wait.'
+      }
+    }
+
+    return (
+      <div>
+        {controls}
+
+        <div className="empty-state">
+          {emptyMessage}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {controls}
 
       <ul className="posts">
         {posts.map(
@@ -412,7 +515,23 @@ export default function PostList({
                   {post.name}
                 </span>
 
-                {' • '}
+                {feedMode ===
+                  'home' &&
+                  post.isFriend && (
+                    <>
+                      <span className="post-meta-separator">
+                        ·
+                      </span>
+
+                      <span className="friend-post-label">
+                        Friend
+                      </span>
+                    </>
+                  )}
+
+                <span className="post-meta-separator">
+                  ·
+                </span>
 
                 {new Date(
                   post.created_at
