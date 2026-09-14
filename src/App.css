@@ -4948,3 +4948,49 @@ main {
       140px;
   }
 }
+/* ==================================================
+   FEED VIEW TABS / FRIEND ACTIVITY
+   ================================================== */
+
+.feed-view-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.65rem;
+}
+
+.feed-view-tab {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  opacity: 0.62;
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  transition:
+    background 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.feed-view-tab:hover {
+  opacity: 0.9;
+}
+
+.feed-view-tab.active {
+  background: rgba(255, 255, 255, 0.08);
+  opacity: 1;
+}
+
+.post-meta-separator {
+  margin: 0 0.32rem;
+  opacity: 0.5;
+}
+
+.friend-post-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  opacity: 0.72;
+}
