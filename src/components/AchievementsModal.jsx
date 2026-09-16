@@ -420,7 +420,15 @@ const filteredAchievements =
                       className="achievement-card-icon"
                       aria-hidden="true"
                     >
-                      {badge.icon}
+                      {badge.slug === 'developer' ? (
+                        <img
+                          src="/achievements/developer_achievement_badge.png"
+                          alt=""
+                          className="achievement-card-image"
+                        />
+                      ) : (
+                        badge.icon
+                      )}
                     </span>
 
                     <span className="featured-manager-name">
@@ -611,7 +619,15 @@ const filteredAchievements =
                       aria-label={`${achievement.name} icon`}
                       role="img"
                     >
-                      {achievement.icon || '◆'}
+                      {achievement.slug === 'developer' ? (
+                        <img
+                          src="/achievements/developer_achievement_badge.png"
+                          alt=""
+                          className="achievement-card-image"
+                        />
+                      ) : (
+                        achievement.icon || '◆'
+                      )}
                     </div>
 
                     <div className="achievement-card-heading">

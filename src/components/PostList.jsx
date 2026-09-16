@@ -1,3 +1,4 @@
+import PinnedBadges from './PinnedBadges'
 ﻿import React, { useEffect, useState } from 'react'
 import {
   getFriendCount,
@@ -514,6 +515,10 @@ export default function PostList({
                 >
                   {post.name}
                 </span>
+
+                <PinnedBadges
+                  badges={post.pinnedBadges}
+                />
 
                 {feedMode ===
                   'home' &&
