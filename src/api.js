@@ -191,6 +191,57 @@ export function voteOnPost(
 
 
 // ==================================================
+// POLLS
+// ==================================================
+
+export function voteOnPoll(
+  postId,
+  optionId
+) {
+  return apiFetch(
+    `/api/posts/${postId}/poll-vote`,
+    {
+      method: 'POST',
+
+      body: JSON.stringify({
+        option_id: optionId
+      })
+    }
+  )
+}
+
+
+export function updatePoll(
+  postId,
+  changes
+) {
+  return apiFetch(
+    `/api/posts/${postId}/poll`,
+    {
+      method: 'PATCH',
+
+      body:
+        JSON.stringify(
+          changes
+        )
+    }
+  )
+}
+
+
+export function closePoll(
+  postId
+) {
+  return apiFetch(
+    `/api/posts/${postId}/poll-close`,
+    {
+      method: 'POST'
+    }
+  )
+}
+
+
+// ==================================================
 // COMMENTS
 // ==================================================
 

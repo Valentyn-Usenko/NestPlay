@@ -733,6 +733,14 @@ app.get(
 
 const { FEED_RANKING } = require('./feedRanking')
 
+const {
+  POLL_DURATIONS,
+  normalizePollDuration,
+  normalizePollOptions,
+  createPollForPost,
+  hydratePollPosts
+} = require('./polls')
+
 // ==================================================
 // POSTS
 // ==================================================
@@ -1075,8 +1083,15 @@ app.get(
           ]
         )
 
+      const hydratedPosts =
+        await hydratePollPosts(
+          pool,
+          userId,
+          result.rows
+        )
+
       return res.json(
-        result.rows
+        hydratedPosts
       )
     } catch (error) {
       console.error(
@@ -1176,8 +1191,17 @@ app.get(
           })
       }
 
+      const hydratedPosts =
+        await hydratePollPosts(
+          pool,
+          userId,
+          [
+            result.rows[0]
+          ]
+        )
+
       res.json(
-        result.rows[0]
+        hydratedPosts[0]
       )
     } catch (error) {
       console.error(
@@ -1207,26 +1231,60 @@ app.post(
     req,
     res
   ) => {
-    try {
-      const {
-        title,
-        content,
-        game_id,
-        game_name,
-        game_art_url
-      } = req.body
+    const requestedContentType =
+      String(
+        req.body?.content_type ||
+        'post'
+      )
+        .trim()
+        .toLowerCase()
 
-      if (
-        !title ||
-        !String(title).trim()
-      ) {
-        return res
-          .status(400)
-          .json({
-            error:
-              'Post title is required'
-          })
-      }
+    if (
+      requestedContentType !==
+        'post' &&
+      requestedContentType !==
+        'poll'
+    ) {
+      return res
+        .status(400)
+        .json({
+          error:
+            'Invalid post content type'
+        })
+    }
+
+    const {
+      title,
+      content,
+      game_id,
+      game_name,
+      game_art_url,
+      poll_options,
+      poll_duration
+    } = req.body || {}
+
+    if (
+      !title ||
+      !String(title).trim()
+    ) {
+      return res
+        .status(400)
+        .json({
+          error:
+            requestedContentType ===
+              'poll'
+              ? 'Poll question is required'
+              : 'Post title is required'
+        })
+    }
+
+    const client =
+      await pool.connect()
+
+    try {
+      await client.query(
+        'BEGIN'
+      )
 
       const username =
         await getUsername(
@@ -1234,7 +1292,7 @@ app.post(
         )
 
       const result =
-        await pool.query(
+        await client.query(
           `
           INSERT INTO posts (
             title,
@@ -1243,7 +1301,8 @@ app.post(
             content,
             game_id,
             game_name,
-            game_art_url
+            game_art_url,
+            content_type
           )
 
           VALUES (
@@ -1253,7 +1312,8 @@ app.post(
             $4,
             $5,
             $6,
-            $7
+            $7,
+            $8
           )
 
           RETURNING *
@@ -1274,9 +1334,31 @@ app.post(
             game_name || null,
 
             game_art_url ||
-              null
+              null,
+
+            requestedContentType
           ]
         )
+
+      const createdPost =
+        result.rows[0]
+
+      if (
+        requestedContentType ===
+        'poll'
+      ) {
+        await createPollForPost(
+          client,
+          createdPost.id,
+          poll_options,
+          poll_duration
+        )
+      }
+
+      await client.query(
+        'COMMIT'
+      )
+
       try {
         await achievementService
           .recordPostCreated(
@@ -1290,28 +1372,51 @@ app.post(
         )
       }
 
+      const hydratedPosts =
+        await hydratePollPosts(
+          pool,
+          req.user.id,
+          [
+            {
+              ...createdPost,
+
+              liveUpvotes: 0,
+              liveDownvotes: 0,
+              myVote: null
+            }
+          ]
+        )
 
       res
         .status(201)
-        .json({
-          ...result.rows[0],
-
-          liveUpvotes: 0,
-          liveDownvotes: 0,
-          myVote: null
-        })
+        .json(
+          hydratedPosts[0]
+        )
     } catch (error) {
+      try {
+        await client.query(
+          'ROLLBACK'
+        )
+      } catch {
+        // Nothing else to do.
+      }
+
       console.error(
         'Create post error:',
         error
       )
 
       res
-        .status(500)
+        .status(
+          error.statusCode ||
+          500
+        )
         .json({
           error:
             error.message
         })
+    } finally {
+      client.release()
     }
   }
 )
@@ -1778,6 +1883,753 @@ app.delete(
     }
   }
 )
+
+// ==================================================
+// EDIT POLL
+// ==================================================
+
+app.patch(
+  '/api/posts/:id/poll',
+  requireAuth,
+  async (req, res) => {
+    const body =
+      req.body || {}
+
+    const hasTitle =
+      Object.prototype.hasOwnProperty.call(
+        body,
+        'title'
+      )
+
+    const hasContent =
+      Object.prototype.hasOwnProperty.call(
+        body,
+        'content'
+      )
+
+    const hasOptions =
+      Object.prototype.hasOwnProperty.call(
+        body,
+        'poll_options'
+      )
+
+    const hasDuration =
+      Object.prototype.hasOwnProperty.call(
+        body,
+        'poll_duration'
+      )
+
+    if (
+      !hasTitle &&
+      !hasContent &&
+      !hasOptions &&
+      !hasDuration
+    ) {
+      return res
+        .status(400)
+        .json({
+          error:
+            'No poll changes provided'
+        })
+    }
+
+    let title = null
+    let options = null
+    let duration = null
+
+    try {
+      if (hasTitle) {
+        title =
+          String(
+            body.title ?? ''
+          ).trim()
+
+        if (!title) {
+          return res
+            .status(400)
+            .json({
+              error:
+                'Poll question is required'
+            })
+        }
+
+        if (title.length > 240) {
+          return res
+            .status(400)
+            .json({
+              error:
+                'Poll question must be 240 characters or fewer'
+            })
+        }
+      }
+
+      if (hasOptions) {
+        options =
+          normalizePollOptions(
+            body.poll_options
+          )
+      }
+
+      if (hasDuration) {
+        duration =
+          normalizePollDuration(
+            body.poll_duration
+          )
+      }
+    } catch (error) {
+      return res
+        .status(
+          error.statusCode ||
+          400
+        )
+        .json({
+          error:
+            error.message
+        })
+    }
+
+    const client =
+      await pool.connect()
+
+    try {
+      await client.query(
+        'BEGIN'
+      )
+
+      const result =
+        await client.query(
+          `
+          SELECT
+            p.user_id,
+
+            pol.closes_at,
+
+            pol.closed_at,
+
+            (
+              pol.closed_at IS NOT NULL
+
+              OR
+
+              (
+                pol.closes_at IS NOT NULL
+                AND pol.closes_at <= NOW()
+              )
+            ) AS is_closed,
+
+            (
+              SELECT
+                COUNT(*)::int
+
+              FROM poll_votes pv
+
+              WHERE
+                pv.poll_id = p.id
+            ) AS vote_count
+
+          FROM posts p
+
+          JOIN polls pol
+            ON pol.post_id = p.id
+
+          WHERE p.id = $1
+
+          FOR UPDATE OF p, pol
+          `,
+          [
+            req.params.id
+          ]
+        )
+
+      if (
+        result.rows.length ===
+        0
+      ) {
+        await client.query(
+          'ROLLBACK'
+        )
+
+        return res
+          .status(404)
+          .json({
+            error:
+              'Poll not found'
+          })
+      }
+
+      const poll =
+        result.rows[0]
+
+      if (
+        poll.user_id !==
+        req.user.id
+      ) {
+        await client.query(
+          'ROLLBACK'
+        )
+
+        return res
+          .status(403)
+          .json({
+            error:
+              'You cannot edit this poll'
+          })
+      }
+
+      if (poll.is_closed) {
+        await client.query(
+          'ROLLBACK'
+        )
+
+        return res
+          .status(409)
+          .json({
+            error:
+              'Closed polls cannot be edited'
+          })
+      }
+
+      if (
+        Number(
+          poll.vote_count
+        ) > 0 &&
+        (
+          hasTitle ||
+          hasOptions
+        )
+      ) {
+        await client.query(
+          'ROLLBACK'
+        )
+
+        return res
+          .status(409)
+          .json({
+            error:
+              'Poll question and choices cannot be changed after voting begins'
+          })
+      }
+
+      if (
+        hasTitle ||
+        hasContent
+      ) {
+        await client.query(
+          `
+          UPDATE posts
+
+          SET
+            title =
+              CASE
+                WHEN $2::boolean
+                  THEN $3
+                ELSE title
+              END,
+
+            content =
+              CASE
+                WHEN $4::boolean
+                  THEN $5
+                ELSE content
+              END
+
+          WHERE id = $1
+          `,
+          [
+            req.params.id,
+            hasTitle,
+            title,
+            hasContent,
+            hasContent
+              ? String(
+                  body.content ??
+                  ''
+                )
+              : null
+          ]
+        )
+      }
+
+      if (hasOptions) {
+        await client.query(
+          `
+          DELETE FROM poll_options
+          WHERE poll_id = $1
+          `,
+          [
+            req.params.id
+          ]
+        )
+
+        const positions =
+          options.map(
+            (_, index) =>
+              index
+          )
+
+        await client.query(
+          `
+          INSERT INTO poll_options (
+            poll_id,
+            option_text,
+            position
+          )
+
+          SELECT
+            $1,
+            entry.option_text,
+            entry.position
+
+          FROM UNNEST(
+            $2::text[],
+            $3::smallint[]
+          ) AS entry(
+            option_text,
+            position
+          )
+          `,
+          [
+            req.params.id,
+            options,
+            positions
+          ]
+        )
+      }
+
+      if (hasDuration) {
+        const interval =
+          POLL_DURATIONS[
+            duration
+          ]
+
+        await client.query(
+          `
+          UPDATE polls
+
+          SET closes_at =
+            CASE
+              WHEN $2::text IS NULL
+                THEN NULL
+              ELSE
+                NOW() +
+                (
+                  $2::text
+                )::interval
+            END
+
+          WHERE post_id = $1
+          `,
+          [
+            req.params.id,
+            interval
+          ]
+        )
+      }
+
+      await client.query(
+        'COMMIT'
+      )
+
+      const postResult =
+        await pool.query(
+          `
+          SELECT *
+          FROM posts
+          WHERE id = $1
+          `,
+          [
+            req.params.id
+          ]
+        )
+
+      const hydrated =
+        await hydratePollPosts(
+          pool,
+          req.user.id,
+          postResult.rows
+        )
+
+      return res.json({
+        post:
+          hydrated[0]
+      })
+    } catch (error) {
+      try {
+        await client.query(
+          'ROLLBACK'
+        )
+      } catch {
+        // Ignore rollback failure.
+      }
+
+      console.error(
+        'Edit poll error:',
+        error
+      )
+
+      return res
+        .status(
+          error.statusCode ||
+          500
+        )
+        .json({
+          error:
+            error.message
+        })
+    } finally {
+      client.release()
+    }
+  }
+)
+
+
+// ==================================================
+// POLL VOTING
+// ==================================================
+
+
+// --------------------------------------------------
+// VOTE / CHANGE POLL VOTE
+// --------------------------------------------------
+
+app.post(
+  '/api/posts/:id/poll-vote',
+  requireAuth,
+  async (
+    req,
+    res
+  ) => {
+    const optionId =
+      req.body?.option_id
+        ? String(
+            req.body.option_id
+          ).trim()
+        : ''
+
+    if (!optionId) {
+      return res
+        .status(400)
+        .json({
+          error:
+            'Poll option is required'
+        })
+    }
+
+    const client =
+      await pool.connect()
+
+    try {
+      await client.query(
+        'BEGIN'
+      )
+
+      const pollResult =
+        await client.query(
+          `
+          SELECT
+            p.id,
+            p.content_type,
+            pol.closes_at,
+            pol.closed_at
+
+          FROM posts p
+
+          JOIN polls pol
+            ON pol.post_id = p.id
+
+          WHERE p.id = $1
+
+          FOR UPDATE OF pol
+          `,
+          [
+            req.params.id
+          ]
+        )
+
+      if (
+        pollResult.rows.length ===
+        0
+      ) {
+        await client.query(
+          'ROLLBACK'
+        )
+
+        return res
+          .status(404)
+          .json({
+            error:
+              'Poll not found'
+          })
+      }
+
+      const poll =
+        pollResult.rows[0]
+
+      const expired =
+        poll.closes_at &&
+        new Date(
+          poll.closes_at
+        ).getTime() <=
+          Date.now()
+
+      if (
+        poll.closed_at ||
+        expired
+      ) {
+        await client.query(
+          'ROLLBACK'
+        )
+
+        return res
+          .status(409)
+          .json({
+            error:
+              'This poll is closed'
+          })
+      }
+
+      const optionResult =
+        await client.query(
+          `
+          SELECT id
+
+          FROM poll_options
+
+          WHERE
+            poll_id = $1
+            AND id = $2
+          `,
+          [
+            req.params.id,
+            optionId
+          ]
+        )
+
+      if (
+        optionResult.rows.length ===
+        0
+      ) {
+        await client.query(
+          'ROLLBACK'
+        )
+
+        return res
+          .status(400)
+          .json({
+            error:
+              'Invalid poll option'
+          })
+      }
+
+      await client.query(
+        `
+        INSERT INTO poll_votes (
+          poll_id,
+          option_id,
+          user_id
+        )
+
+        VALUES (
+          $1,
+          $2,
+          $3
+        )
+
+        ON CONFLICT (
+          poll_id,
+          user_id
+        )
+
+        DO UPDATE SET
+          option_id =
+            EXCLUDED.option_id,
+
+          updated_at =
+            NOW()
+        `,
+        [
+          req.params.id,
+          optionId,
+          req.user.id
+        ]
+      )
+
+      await client.query(
+        'COMMIT'
+      )
+
+      const hydrated =
+        await hydratePollPosts(
+          pool,
+          req.user.id,
+          [
+            {
+              id:
+                req.params.id,
+
+              content_type:
+                'poll'
+            }
+          ]
+        )
+
+      return res.json({
+        poll:
+          hydrated[0]
+            ?.poll ||
+          null
+      })
+    } catch (error) {
+      try {
+        await client.query(
+          'ROLLBACK'
+        )
+      } catch {
+        // Nothing else to do.
+      }
+
+      console.error(
+        'Poll vote error:',
+        error
+      )
+
+      return res
+        .status(500)
+        .json({
+          error:
+            error.message
+        })
+    } finally {
+      client.release()
+    }
+  }
+)
+
+
+// --------------------------------------------------
+// CLOSE POLL EARLY
+// --------------------------------------------------
+
+app.post(
+  '/api/posts/:id/poll-close',
+  requireAuth,
+  async (
+    req,
+    res
+  ) => {
+    try {
+      const result =
+        await pool.query(
+          `
+          UPDATE polls pol
+
+          SET closed_at =
+            COALESCE(
+              pol.closed_at,
+              NOW()
+            )
+
+          FROM posts p
+
+          WHERE
+            pol.post_id = $1
+
+            AND
+            p.id =
+              pol.post_id
+
+            AND
+            p.user_id = $2
+
+          RETURNING
+            pol.post_id
+          `,
+          [
+            req.params.id,
+            req.user.id
+          ]
+        )
+
+      if (
+        result.rows.length ===
+        0
+      ) {
+        const postResult =
+          await pool.query(
+            `
+            SELECT
+              user_id,
+              content_type
+
+            FROM posts
+
+            WHERE id = $1
+            `,
+            [
+              req.params.id
+            ]
+          )
+
+        if (
+          postResult.rows.length ===
+          0 ||
+          postResult.rows[0]
+            .content_type !==
+            'poll'
+        ) {
+          return res
+            .status(404)
+            .json({
+              error:
+                'Poll not found'
+            })
+        }
+
+        return res
+          .status(403)
+          .json({
+            error:
+              'You cannot close this poll'
+          })
+      }
+
+      const hydrated =
+        await hydratePollPosts(
+          pool,
+          req.user.id,
+          [
+            {
+              id:
+                req.params.id,
+
+              content_type:
+                'poll'
+            }
+          ]
+        )
+
+      return res.json({
+        poll:
+          hydrated[0]
+            ?.poll ||
+          null
+      })
+    } catch (error) {
+      console.error(
+        'Close poll error:',
+        error
+      )
+
+      return res
+        .status(500)
+        .json({
+          error:
+            error.message
+        })
+    }
+  }
+)
+
 
 // ==================================================
 // VOTES

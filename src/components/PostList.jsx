@@ -5,6 +5,8 @@ import {
   voteOnPost
 } from '../api'
 
+import PollContent from './PollContent'
+
 export default function PostList({
   onOpenPost,
   onOpenProfile,
@@ -591,6 +593,31 @@ export default function PostList({
                     </button>
                   )}
                 </div>
+              )}
+
+              {post.content_type ===
+                'poll' && (
+                <PollContent
+                  post={post}
+                  session={session}
+                  onPollChange={
+                    nextPoll =>
+                      setPosts(
+                        current =>
+                          current.map(
+                            item =>
+                              item.id ===
+                              post.id
+                                ? {
+                                    ...item,
+                                    poll:
+                                      nextPoll
+                                  }
+                                : item
+                          )
+                      )
+                  }
+                />
               )}
 
               <div
