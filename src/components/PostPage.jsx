@@ -4,6 +4,7 @@ import React, {
 } from 'react'
 
 import AuthModal from './AuthModal'
+import PollContent from './PollContent'
 
 import {
   getPost,
@@ -558,9 +559,47 @@ export default function PostPage({
       )}
 
 
-      <p>
-        {post.content}
-      </p>
+      {post.content_type !==
+        'poll' &&
+        post.content && (
+        <p>
+          {post.content}
+        </p>
+      )}
+
+
+      {post.content_type ===
+        'poll' && (
+        <PollContent
+          post={post}
+          session={session}
+          allowClose={
+            isOwner
+          }
+          allowEdit={
+            isOwner
+          }
+          onPostChange={
+            updatedPost =>
+              setPost(
+                updatedPost
+              )
+          }
+          onPollChange={
+            nextPoll =>
+              setPost(
+                current =>
+                  current
+                    ? {
+                        ...current,
+                        poll:
+                          nextPoll
+                      }
+                    : current
+              )
+          }
+        />
+      )}
 
 
       {/* ========================================== */}

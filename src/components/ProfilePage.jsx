@@ -861,6 +861,24 @@ export default function ProfilePage({
               <div className="profile-post-top">
                 <h3 className="profile-post-title">
                   {post.title}
+
+                  {post.content_type ===
+                    'poll' && (
+                    <span
+                      style={{
+                        marginLeft:
+                          '0.5rem',
+                        color:
+                          'var(--accent)',
+                        fontSize:
+                          '0.72rem',
+                        fontWeight:
+                          600
+                      }}
+                    >
+                      Poll
+                    </span>
+                  )}
                 </h3>
 
                 <span className="profile-post-upvotes">
@@ -943,6 +961,24 @@ export default function ProfilePage({
               <div className="profile-post-top">
                 <h3 className="profile-post-title">
                   {post.title}
+
+                  {post.content_type ===
+                    'poll' && (
+                    <span
+                      style={{
+                        marginLeft:
+                          '0.5rem',
+                        color:
+                          'var(--accent)',
+                        fontSize:
+                          '0.72rem',
+                        fontWeight:
+                          600
+                      }}
+                    >
+                      Poll
+                    </span>
+                  )}
                 </h3>
 
                 <span className="profile-post-upvotes">

@@ -10,6 +10,8 @@ import React, {
     joinGameHub,
     leaveGameHub
   } from '../api'
+
+  import PollContent from './PollContent'
   
   
   const getUpvoteCount = post => {
@@ -80,7 +82,7 @@ import React, {
       let active = true
   
       async function loadGamePosts() {
-        if (!game) {
+    if (!game) {
           return
         }
   
@@ -429,13 +431,41 @@ import React, {
           </h3>
   
   
-          {post.content && (
+          {post.content_type !==
+            'poll' &&
+            post.content && (
             <p className="hub-post-content">
               {post.content}
             </p>
           )}
-  
-  
+
+
+          {post.content_type ===
+            'poll' && (
+            <PollContent
+              post={post}
+              session={session}
+              onPollChange={
+                nextPoll =>
+                  setPosts(
+                    current =>
+                      current.map(
+                        item =>
+                          item.id ===
+                          post.id
+                            ? {
+                                ...item,
+                                poll:
+                                  nextPoll
+                              }
+                            : item
+                      )
+                  )
+              }
+            />
+          )}
+
+
           <div className="hub-post-actions">
   
             <span>
@@ -674,21 +704,7 @@ import React, {
           </button>
   
   
-          <button
-            className={
-              activeTab ===
-              'polls'
-                ? 'active'
-                : ''
-            }
-            onClick={() =>
-              setActiveTab(
-                'polls'
-              )
-            }
-          >
-            Polls
-          </button>
+
   
   
           <button
@@ -1035,7 +1051,6 @@ import React, {
   
   
             {[
-              'polls',
               'spoilers',
               'players',
               'media'

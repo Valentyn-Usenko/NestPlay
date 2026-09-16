@@ -5,6 +5,9 @@ import {
   voteOnPost
 } from '../api'
 
+import PollContent from './PollContent'
+import PinnedBadges from './PinnedBadges'
+
 export default function PostList({
   onOpenPost,
   onOpenProfile,
@@ -515,6 +518,12 @@ export default function PostList({
                   {post.name}
                 </span>
 
+                <PinnedBadges
+                  badges={
+                    post.pinnedBadges
+                  }
+                />
+
                 {feedMode ===
                   'home' &&
                   post.isFriend && (
@@ -591,6 +600,31 @@ export default function PostList({
                     </button>
                   )}
                 </div>
+              )}
+
+              {post.content_type ===
+                'poll' && (
+                <PollContent
+                  post={post}
+                  session={session}
+                  onPollChange={
+                    nextPoll =>
+                      setPosts(
+                        current =>
+                          current.map(
+                            item =>
+                              item.id ===
+                              post.id
+                                ? {
+                                    ...item,
+                                    poll:
+                                      nextPoll
+                                  }
+                                : item
+                          )
+                      )
+                  }
+                />
               )}
 
               <div

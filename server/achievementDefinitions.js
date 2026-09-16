@@ -528,7 +528,7 @@ const ACHIEVEMENT_DEFINITIONS = [
     'Developer',
     'Verified game developer.',
     'special',
-    'epic',
+    'legendary',
     '</>',
     {
       manualOnly: true,
