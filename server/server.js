@@ -894,6 +894,34 @@ app.get(
                   )
               ) AS "isFriend",
 
+              COALESCE(
+                (
+                  SELECT
+                    json_agg(
+                      json_build_object(
+                        'id', ad.id,
+                        'slug', ad.slug,
+                        'name', ad.name,
+                        'rarity', ad.rarity,
+                        'icon', ad.icon
+                      )
+                      ORDER BY
+                        fa.display_order
+                    )
+
+                  FROM featured_achievements fa
+
+                  JOIN achievement_definitions ad
+                    ON ad.id =
+                      fa.achievement_id
+
+                  WHERE
+                    fa.user_id =
+                      p.user_id
+                ),
+                '[]'::json
+              ) AS "pinnedBadges",
+
               EXISTS (
                 SELECT 1
 

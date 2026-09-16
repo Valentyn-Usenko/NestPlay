@@ -5509,3 +5509,78 @@ main {
     flex: 1;
   }
 }
+
+.featured-badge-image {
+  width: 48px;
+  height: 48px;
+  display: block;
+  object-fit: contain;
+}
+
+.achievement-card-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  border-radius: 50%;
+}
+
+.pinned-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.pinned-badge {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  font-size: 11px;
+  line-height: 1;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.pinned-badge-legendary {
+  border-color: rgba(255, 176, 32, 0.75);
+  box-shadow: 0 0 7px rgba(255, 145, 0, 0.28);
+}
+
+.pinned-badge-epic {
+  border-color: rgba(174, 107, 255, 0.65);
+}
+
+.pinned-badge-rare {
+  border-color: rgba(65, 150, 255, 0.65);
+}
+
+.pinned-badge-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+@media (max-width: 600px) {
+  .pinned-badges {
+    gap: 3px;
+    margin-left: 4px;
+  }
+
+  .pinned-badge {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+  }
+
+  .pinned-badge:nth-child(n + 3) {
+    display: none;
+  }
+}

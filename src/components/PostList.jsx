@@ -6,6 +6,7 @@ import {
 } from '../api'
 
 import PollContent from './PollContent'
+import PinnedBadges from './PinnedBadges'
 
 export default function PostList({
   onOpenPost,
@@ -516,6 +517,12 @@ export default function PostList({
                 >
                   {post.name}
                 </span>
+
+                <PinnedBadges
+                  badges={
+                    post.pinnedBadges
+                  }
+                />
 
                 {feedMode ===
                   'home' &&

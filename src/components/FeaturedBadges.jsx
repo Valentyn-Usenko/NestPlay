@@ -42,7 +42,15 @@ export default function FeaturedBadges({
                 className="featured-badge-icon"
                 aria-hidden="true"
               >
-                {badge.icon || '◆'}
+                {badge.slug === 'developer' ? (
+                  <img
+                    src="/achievements/developer_achievement_badge.png"
+                    alt=""
+                    className="featured-badge-image"
+                  />
+                ) : (
+                  badge.icon || '◆'
+                )}
               </span>
 
               <span className="featured-badge-name">
