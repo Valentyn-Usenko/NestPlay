@@ -1,5 +1,5 @@
 import PinnedBadges from './PinnedBadges'
-﻿import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   getFriendCount,
   getPosts,
