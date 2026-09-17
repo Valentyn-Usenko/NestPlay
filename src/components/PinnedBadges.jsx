@@ -23,10 +23,9 @@
               `${badge.name} achievement`
             }
           >
-            {badge.slug ===
-            'developer' ? (
+            {badge.imageUrl ? (
               <img
-                src="/achievements/developer_achievement_badge.png"
+                src={badge.imageUrl}
                 alt=""
                 className="pinned-badge-image"
               />

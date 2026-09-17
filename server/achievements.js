@@ -20,6 +20,7 @@ function createAchievementService(pool) {
           category,
           rarity,
           icon,
+          image_url,
           requirement_type,
           requirement_value,
           hidden,
@@ -33,8 +34,8 @@ function createAchievementService(pool) {
         )
         VALUES (
           $1, $2, $3, $4, $5, $6,
-          $7, $8, $9, $10, $11,
-          $12, $13, $14, $15::jsonb,
+          $7, $8, $9, $10, $11, $12,
+          $13, $14, $15, $16::jsonb,
           NOW()
         )
         ON CONFLICT (slug)
@@ -44,6 +45,7 @@ function createAchievementService(pool) {
           category = EXCLUDED.category,
           rarity = EXCLUDED.rarity,
           icon = EXCLUDED.icon,
+          image_url = EXCLUDED.image_url,
           requirement_type = EXCLUDED.requirement_type,
           requirement_value = EXCLUDED.requirement_value,
           hidden = EXCLUDED.hidden,
@@ -62,6 +64,7 @@ function createAchievementService(pool) {
           definition.category,
           definition.rarity,
           definition.icon,
+          definition.imageUrl || null,
           definition.requirementType,
           definition.requirementValue,
           Boolean(definition.hidden),
@@ -1138,6 +1141,7 @@ function createAchievementService(pool) {
                 null,
               icon:
                 '?',
+              imageUrl: null,
               hidden: true,
               locked: true,
               unlocked: false,
@@ -1166,6 +1170,9 @@ function createAchievementService(pool) {
               definition.rarity,
             icon:
               definition.icon,
+            imageUrl:
+              definition.image_url ||
+              null,
             hidden:
               Boolean(
                 definition.hidden

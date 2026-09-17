@@ -420,9 +420,9 @@ const filteredAchievements =
                       className="achievement-card-icon"
                       aria-hidden="true"
                     >
-                      {badge.slug === 'developer' ? (
+                      {badge.imageUrl ? (
                         <img
-                          src="/achievements/developer_achievement_badge.png"
+                          src={badge.imageUrl}
                           alt=""
                           className="achievement-card-image"
                         />
@@ -619,9 +619,9 @@ const filteredAchievements =
                       aria-label={`${achievement.name} icon`}
                       role="img"
                     >
-                      {achievement.slug === 'developer' ? (
+                      {achievement.imageUrl ? (
                         <img
-                          src="/achievements/developer_achievement_badge.png"
+                          src={achievement.imageUrl}
                           alt=""
                           className="achievement-card-image"
                         />

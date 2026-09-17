@@ -42,9 +42,9 @@ export default function FeaturedBadges({
                 className="featured-badge-icon"
                 aria-hidden="true"
               >
-                {badge.slug === 'developer' ? (
+                {badge.imageUrl ? (
                   <img
-                    src="/achievements/developer_achievement_badge.png"
+                    src={badge.imageUrl}
                     alt=""
                     className="featured-badge-image"
                   />

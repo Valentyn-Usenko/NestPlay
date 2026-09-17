@@ -532,6 +532,7 @@ const ACHIEVEMENT_DEFINITIONS = [
     '</>',
     {
       manualOnly: true,
+      imageUrl: '/achievements/developer_achievement_badge.png',
       metadata: { awardMode: 'verification' }
     }
   ),

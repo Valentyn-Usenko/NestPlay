@@ -895,7 +895,8 @@ app.get(
                         'slug', ad.slug,
                         'name', ad.name,
                         'rarity', ad.rarity,
-                        'icon', ad.icon
+                        'icon', ad.icon,
+                        'imageUrl', ad.image_url
                       )
                       ORDER BY
                         fa.display_order
