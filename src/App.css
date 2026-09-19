@@ -5058,3 +5058,33 @@ main {
     display: none;
   }
 }
+
+/* Fix featured achievement badge sizing */
+
+.featured-badge-icon {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  flex: 0 0 36px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+}
+
+.featured-badge-image {
+  width: 34px;
+  height: 34px;
+
+  display: block;
+  object-fit: contain;
+
+  border-radius: 50%;
+}
+
+.featured-badge-name {
+  min-width: 0;
+  flex: 1;
+}

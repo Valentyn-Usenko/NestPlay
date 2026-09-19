@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS achievement_definitions (
     rarity IN ('common', 'uncommon', 'rare', 'epic', 'legendary')
   ),
   icon TEXT NOT NULL DEFAULT '◆',
+  image_url TEXT,
   requirement_type TEXT,
   requirement_value BIGINT,
   hidden BOOLEAN NOT NULL DEFAULT FALSE,
