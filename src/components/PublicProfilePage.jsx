@@ -8,6 +8,8 @@ import {
   getProfiles
 } from '../api'
 
+import CurrentlyPlaying from './CurrentlyPlaying'
+
 const AVATAR_COLORS = {
   purple: 'linear-gradient(135deg, #646cff, #a78bfa)',
   red: 'linear-gradient(135deg, #fc4646, #ff8c00)',
@@ -391,6 +393,15 @@ export default function PublicProfilePage({
             Member since{' '}
             {joinDate}
           </p>
+
+          {!isPrivate && (
+            <CurrentlyPlaying
+              games={
+                profile?.currentGames ||
+                []
+              }
+            />
+          )}
 
           {isPrivate && (
             <span className="private-badge">

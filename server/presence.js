@@ -58,6 +58,33 @@ function createPresenceService(
   const gatewayClients =
     new Map()
 
+  function currentGameFromRow(
+    row
+  ) {
+    if (
+      !row ||
+      row.is_private ||
+      !row.current_game_id
+    ) {
+      return null
+    }
+
+    return {
+      gameId:
+        row.current_game_id,
+
+      name:
+        row.current_game_name,
+
+      gameArtUrl:
+        row.current_game_art_url ||
+        null,
+
+      source:
+        'manual'
+    }
+  }
+
   function gatewayClient(
     domainName,
     stage
@@ -146,13 +173,46 @@ function createPresenceService(
     const result = await pool.query(
       `
       SELECT
-        id,
-        username,
-        avatar_url,
-        avatar_color,
-        show_online_status
-      FROM profiles
-      WHERE id = $1
+        p.id,
+        p.username,
+        p.avatar_url,
+        p.avatar_color,
+        p.show_online_status,
+        p.is_private,
+
+        cg.game_id
+          AS current_game_id,
+
+        cg.game_name
+          AS current_game_name,
+
+        cg.game_art_url
+          AS current_game_art_url
+
+      FROM profiles p
+
+      LEFT JOIN LATERAL (
+        SELECT
+          game_id,
+          game_name,
+          game_art_url
+
+        FROM user_current_games
+
+        WHERE
+          user_id = p.id
+          AND source = 'manual'
+
+        ORDER BY
+          position ASC,
+          created_at ASC
+
+        LIMIT 1
+      ) cg
+        ON TRUE
+
+      WHERE p.id = $1
+
       LIMIT 1
       `,
       [userId]
@@ -267,7 +327,12 @@ function createPresenceService(
           null,
         avatar_color:
           profile.avatar_color ||
-          'purple'
+          'purple',
+
+        currentGame:
+          currentGameFromRow(
+            profile
+          )
       }
     }
 
@@ -294,7 +359,9 @@ function createPresenceService(
               THEN receiver_id
             ELSE sender_id
           END AS friend_id
+
         FROM friend_requests
+
         WHERE
           status = 'accepted'
           AND (
@@ -302,34 +369,73 @@ function createPresenceService(
             OR receiver_id = $1
           )
       ),
-      online_friends AS (
+
+      online_presence AS (
         SELECT
-          p.id,
-          p.username,
-          p.avatar_url,
-          p.avatar_color,
+          user_id,
           MAX(
-            pc.last_active_at
+            last_active_at
           ) AS last_active_at
-        FROM friend_ids f
-        JOIN profiles p
-          ON p.id = f.friend_id
-        JOIN presence_connections pc
-          ON pc.user_id = p.id
-        WHERE
-          p.show_online_status = TRUE
-          AND pc.expires_at > NOW()
-        GROUP BY
-          p.id,
-          p.username,
-          p.avatar_url,
-          p.avatar_color
+
+        FROM presence_connections
+
+        WHERE expires_at > NOW()
+
+        GROUP BY user_id
       )
-      SELECT *
-      FROM online_friends
+
+      SELECT
+        p.id,
+        p.username,
+        p.avatar_url,
+        p.avatar_color,
+        p.is_private,
+
+        op.last_active_at,
+
+        cg.game_id
+          AS current_game_id,
+
+        cg.game_name
+          AS current_game_name,
+
+        cg.game_art_url
+          AS current_game_art_url
+
+      FROM friend_ids f
+
+      JOIN profiles p
+        ON p.id = f.friend_id
+
+      JOIN online_presence op
+        ON op.user_id = p.id
+
+      LEFT JOIN LATERAL (
+        SELECT
+          game_id,
+          game_name,
+          game_art_url
+
+        FROM user_current_games
+
+        WHERE
+          user_id = p.id
+          AND source = 'manual'
+
+        ORDER BY
+          position ASC,
+          created_at ASC
+
+        LIMIT 1
+      ) cg
+        ON TRUE
+
+      WHERE
+        p.show_online_status = TRUE
+
       ORDER BY
-        last_active_at DESC,
-        LOWER(username) ASC
+        op.last_active_at DESC,
+        LOWER(p.username) ASC
       `,
       [userId]
     )
@@ -352,7 +458,12 @@ function createPresenceService(
               signed.avatar_color ||
               'purple',
             lastActiveAt:
-              signed.last_active_at
+              signed.last_active_at,
+
+            currentGame:
+              currentGameFromRow(
+                signed
+              )
           }
         }
       )

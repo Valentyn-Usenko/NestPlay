@@ -312,3 +312,37 @@
     transition: none !important;
   }
 }
+
+/* --------------------------------------------------
+   ONLINE FRIEND CURRENT GAME
+--------------------------------------------------- */
+
+.online-friend-status {
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.online-friend-game-icon {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+  object-fit: cover;
+  border-radius: 3px;
+  opacity: 0.82;
+}
+
+.online-friend-game-text {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.online-friend-row:hover
+  .online-friend-game-icon {
+  opacity: 1;
+}

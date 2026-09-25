@@ -429,6 +429,20 @@ export function updateProfile(fields) {
   )
 }
 
+export function updateCurrentGames(
+  games
+) {
+  return apiFetch(
+    '/api/profile/current-games',
+    {
+      method: 'PUT',
+      body: JSON.stringify({
+        games
+      })
+    }
+  )
+}
+
 export async function uploadAvatar(file) {
   const accessToken =
     await getAuthAccessToken()

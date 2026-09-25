@@ -16,6 +16,46 @@ import {
 
 const MAX_SIDEBAR_FRIENDS = 6
 
+function normalizeCurrentGame(
+  game
+) {
+  if (!game) {
+    return null
+  }
+
+  const gameId =
+    String(
+      game.gameId ??
+      game.game_id ??
+      game.id ??
+      ''
+    )
+
+  const name =
+    game.name ??
+    game.game_name ??
+    ''
+
+  if (
+    !gameId ||
+    !name
+  ) {
+    return null
+  }
+
+  return {
+    gameId,
+    name,
+
+    gameArtUrl:
+      game.gameArtUrl ??
+      game.game_art_url ??
+      game.background_image ??
+      null
+  }
+}
+
+
 const AVATAR_MAP = {
   purple:
     'linear-gradient(135deg, #646cff, #a78bfa)',
@@ -46,7 +86,13 @@ function normalizeFriend(friend) {
     lastActiveAt:
       friend.lastActiveAt ||
       friend.last_active_at ||
-      new Date().toISOString()
+      new Date().toISOString(),
+
+    currentGame:
+      normalizeCurrentGame(
+        friend.currentGame ||
+        friend.current_game
+      )
   }
 }
 
@@ -158,7 +204,33 @@ function FriendRow({
         </span>
 
         <span className="online-friend-status">
-          Online
+          {friend.currentGame ? (
+            <>
+              {friend.currentGame
+                .gameArtUrl && (
+                <img
+                  src={
+                    friend.currentGame
+                      .gameArtUrl
+                  }
+                  alt=""
+                  className="online-friend-game-icon"
+                />
+              )}
+
+              <span
+                className="online-friend-game-text"
+                title={
+                  friend.currentGame.name
+                }
+              >
+                Playing lately ·{' '}
+                {friend.currentGame.name}
+              </span>
+            </>
+          ) : (
+            'Online'
+          )}
         </span>
       </span>
     </button>
