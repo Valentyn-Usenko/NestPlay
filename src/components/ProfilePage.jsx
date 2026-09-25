@@ -11,6 +11,7 @@ import {
 } from '../api'
 import ChatModal from './ChatModal'
 import ProfileAchievements from './ProfileAchievements'
+import CurrentlyPlaying from './CurrentlyPlaying'
 
 const AVATAR_COLORS = [
   {
@@ -88,6 +89,9 @@ export default function ProfilePage({
 
   const [avatarPanelOpen, setAvatarPanelOpen] =
     useState(false)
+
+  const [currentGames, setCurrentGames] =
+    useState([])
 
   const [chatFriend, setChatFriend] =
     useState(null)
@@ -257,6 +261,11 @@ export default function ProfilePage({
           setAvatarColor(
             myProfile.avatar_color ||
             'purple'
+          )
+
+          setCurrentGames(
+            myProfile.currentGames ||
+            []
           )
         }
 
@@ -555,6 +564,14 @@ export default function ProfilePage({
             Member since{' '}
             {joinDate}
           </p>
+
+          <CurrentlyPlaying
+            games={currentGames}
+            editable={true}
+            onChange={
+              setCurrentGames
+            }
+          />
         </div>
       </div>
 

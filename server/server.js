@@ -36,6 +36,12 @@ const {
   registerPresenceRoutes
 } = require('./presence')
 
+const {
+  getCurrentGames,
+  getCurrentGamesForUsers,
+  replaceManualCurrentGames
+} = require('./currentGames')
+
 const app = express()
 
 const PORT =
@@ -3571,9 +3577,16 @@ app.get(
           result.rows[0]
         )
 
-      res.json(
-        profile
-      )
+      const currentGames =
+        await getCurrentGames(
+          pool,
+          profile.id
+        )
+
+      res.json({
+        ...profile,
+        currentGames
+      })
     } catch (error) {
       console.error(
         'Get my profile error:',
@@ -3661,9 +3674,35 @@ app.get(
           ]
         )
 
-      const profiles =
+      const signedProfiles =
         await addSignedAvatarUrls(
           result.rows
+        )
+
+      const currentGamesByUser =
+        await getCurrentGamesForUsers(
+          pool,
+          signedProfiles.map(
+            profile =>
+              profile.id
+          )
+        )
+
+      const profiles =
+        signedProfiles.map(
+          profile => ({
+            ...profile,
+            currentGames:
+              profile.is_private
+                ? []
+                : (
+                    currentGamesByUser.get(
+                      String(
+                        profile.id
+                      )
+                    ) || []
+                  )
+          })
         )
 
       res.json(
@@ -3735,9 +3774,18 @@ app.get(
           result.rows[0]
         )
 
-      res.json(
-        profile
-      )
+      const currentGames =
+        profile.is_private
+          ? []
+          : await getCurrentGames(
+              pool,
+              profile.id
+            )
+
+      res.json({
+        ...profile,
+        currentGames
+      })
     } catch (error) {
       console.error(
         'Get profile error:',
@@ -3750,6 +3798,78 @@ app.get(
           error:
             error.message
         })
+    }
+  }
+)
+
+
+// --------------------------------------------------
+// UPDATE CURRENTLY PLAYING GAMES
+// --------------------------------------------------
+
+app.put(
+  '/api/profile/current-games',
+  requireAuth,
+  async (
+    req,
+    res
+  ) => {
+    let client = null
+
+    try {
+      await ensureProfile(
+        req.user
+      )
+
+      client =
+        await pool.connect()
+
+      await client.query(
+        'BEGIN'
+      )
+
+      const currentGames =
+        await replaceManualCurrentGames(
+          client,
+          req.user.id,
+          req.body?.games
+        )
+
+      await client.query(
+        'COMMIT'
+      )
+
+      return res.json({
+        currentGames
+      })
+    } catch (error) {
+      if (client) {
+        try {
+          await client.query(
+            'ROLLBACK'
+          )
+        } catch {
+          // Nothing else to do.
+        }
+      }
+
+      console.error(
+        'Update current games error:',
+        error
+      )
+
+      return res
+        .status(
+          error.statusCode ||
+          500
+        )
+        .json({
+          error:
+            error.message ||
+            'Could not update currently playing games'
+        })
+    } finally {
+      client?.release()
     }
   }
 )
