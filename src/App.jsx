@@ -595,6 +595,8 @@ export default function App() {
 
       <header>
 
+        <div className="header-inner">
+
         <div
           className="header-left"
           ref={menuRef}
@@ -629,6 +631,30 @@ export default function App() {
                 0 && (
                 <span className="msg-nav-dot" />
               )}
+            </button>
+          )}
+
+          {session && (
+            <button
+              className="msg-nav-btn desktop-inbox-btn"
+              onClick={() => setShowInbox(true)}
+              aria-label="Inbox"
+            >
+              📬
+
+              {pendingCount > 0 && (
+                <span className="msg-nav-dot" />
+              )}
+            </button>
+          )}
+
+          {session && (
+            <button
+              className="msg-nav-btn desktop-settings-btn"
+              onClick={() => setShowSettings(true)}
+              aria-label="Settings"
+            >
+              ⚙️
             </button>
           )}
 
@@ -765,6 +791,8 @@ export default function App() {
 
             </>
           )}
+
+        </div>
 
         </div>
 

@@ -693,6 +693,8 @@ export default function ProfilePage({
         </div>
       </div>
 
+      <div className="profile-content-grid">
+      <div className="profile-side-col">
       <ProfileAchievements
         userId={profileId}
         editable={true}
@@ -833,7 +835,9 @@ export default function ProfilePage({
           </button>
         )}
       </div>
+      </div>
 
+      <div className="profile-main-col">
       <div className="profile-posts-section">
         <h3 className="profile-posts-heading">
           Your Posts
@@ -997,6 +1001,8 @@ export default function ProfilePage({
               : `Show all ${likedPosts.length} liked posts`}
           </button>
         )}
+      </div>
+      </div>
       </div>
 
       <button
