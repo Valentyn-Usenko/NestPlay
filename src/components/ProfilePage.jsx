@@ -51,7 +51,9 @@ const AVATAR_MAP = {
 export default function ProfilePage({
   session,
   onBack,
-  onOpenProfile
+  onOpenProfile,
+  focusSection = null,
+  focusSectionVersion = 0
 }) {
   const [posts, setPosts] = useState([])
   const [likedPosts, setLikedPosts] = useState([])
@@ -94,6 +96,8 @@ export default function ProfilePage({
 
   const mountedRef = useRef(true)
   const fileInputRef = useRef()
+  const achievementsRef = useRef(null)
+  const friendsRef = useRef(null)
 
   const avatarLetter =
     (username || '?')
@@ -292,6 +296,47 @@ export default function ProfilePage({
         false
     }
   }, [session.user.id])
+
+  // ------------------------------------------------
+  // PROFILE SECTION NAVIGATION
+  // ------------------------------------------------
+
+  useEffect(() => {
+    if (!focusSection) {
+      return
+    }
+
+    const target =
+      focusSection === 'achievements'
+        ? achievementsRef.current
+        : focusSection === 'friends'
+          ? friendsRef.current
+          : null
+
+    if (!target) {
+      return
+    }
+
+    const frame =
+      window.requestAnimationFrame(
+        () => {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          })
+        }
+      )
+
+    return () => {
+      window.cancelAnimationFrame(
+        frame
+      )
+    }
+  }, [
+    focusSection,
+    focusSectionVersion
+  ])
+
 
   // ------------------------------------------------
   // AVATAR UPLOAD
@@ -676,12 +721,22 @@ export default function ProfilePage({
         </div>
       </div>
 
-      <ProfileAchievements
-        userId={profileId}
-        editable={true}
-      />
+      <div
+        ref={achievementsRef}
+        id="profile-achievements"
+        className="profile-section-anchor"
+      >
+        <ProfileAchievements
+          userId={profileId}
+          editable={true}
+        />
+      </div>
 
-      <div className="profile-posts-section">
+      <div
+        ref={friendsRef}
+        id="profile-friends"
+        className="profile-posts-section profile-section-anchor"
+      >
         <h3 className="profile-posts-heading">
           Friends
         </h3>

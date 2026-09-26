@@ -28,7 +28,8 @@ import React, {
     onOpenPost,
     onOpenProfile,
     onCreatePost,
-    onJoinRequiresAuth
+    onJoinRequiresAuth,
+    onMembershipChange
   }) {
     const [
       posts,
@@ -276,6 +277,8 @@ import React, {
             result.memberCount ||
             0
           )
+
+          onMembershipChange?.()
         } catch (error) {
           console.error(
             'Community update failed:',

@@ -21,6 +21,7 @@ import {
 
 import PostList from './components/PostList'
 import RightSidebar from './components/RightSidebar'
+import LeftNavigationRail from './components/LeftNavigationRail'
 import GameHub from './components/GameHub'
 import PostModal from './components/PostModal'
 import PostPage from './components/PostPage'
@@ -60,6 +61,21 @@ export default function App() {
     activePage,
     setActivePage
   ] = useState('feed')
+
+  const [
+    profileSection,
+    setProfileSection
+  ] = useState(null)
+
+  const [
+    profileSectionVersion,
+    setProfileSectionVersion
+  ] = useState(0)
+
+  const [
+    hubsRefreshKey,
+    setHubsRefreshKey
+  ] = useState(0)
 
   const [
     activeUserId,
@@ -365,6 +381,7 @@ export default function App() {
       setActivePost(null)
       setActiveUserId(null)
       setActiveGame(null)
+      setProfileSection(null)
     }
 
 
@@ -378,6 +395,7 @@ export default function App() {
       setActivePost(null)
       setActiveUserId(null)
       setActiveGame(null)
+      setProfileSection(null)
 
       window.scrollTo({
         top: 0,
@@ -505,11 +523,37 @@ export default function App() {
       setActivePost(null)
       setActiveGame(null)
       setActiveUserId(null)
+      setProfileSection(null)
 
       window.scrollTo({
         top: 0,
         behavior: 'smooth'
       })
+    }
+
+
+  // ==================================================
+  // OPEN PROFILE SECTION
+  // ==================================================
+
+  const openOwnProfileSection =
+    section => {
+      setActivePage(
+        'profile'
+      )
+
+      setActivePost(null)
+      setActiveGame(null)
+      setActiveUserId(null)
+
+      setProfileSection(
+        section
+      )
+
+      setProfileSectionVersion(
+        version =>
+          version + 1
+      )
     }
 
 
@@ -585,6 +629,23 @@ export default function App() {
       */
     }
 
+
+
+  const leftRailActiveItem =
+    activePage === 'profile'
+      ? (
+          profileSection === 'friends' ||
+          profileSection === 'achievements'
+            ? profileSection
+            : 'profile'
+        )
+      : (
+          activePage === 'feed' &&
+          !activePost &&
+          !activeGame
+            ? 'home'
+            : null
+        )
 
   return (
     <>
@@ -772,7 +833,33 @@ export default function App() {
 
 
       <div className="app-root">
-        <main>
+        <div className="app-layout">
+
+          <LeftNavigationRail
+            session={session}
+            activeItem={
+              leftRailActiveItem
+            }
+            activeGameId={
+              activeGame?.id ??
+              null
+            }
+            onHome={goHome}
+            onProfile={
+              openOwnProfile
+            }
+            onProfileSection={
+              openOwnProfileSection
+            }
+            onOpenGameHub={
+              openGameHub
+            }
+            hubsRefreshKey={
+              hubsRefreshKey
+            }
+          />
+
+          <main className="app-main">
 
 
           {/* ==========================================
@@ -791,6 +878,12 @@ export default function App() {
                 }
                 onOpenProfile={
                   openUserProfile
+                }
+                focusSection={
+                  profileSection
+                }
+                focusSectionVersion={
+                  profileSectionVersion
                 }
               />
             )}
@@ -911,6 +1004,11 @@ export default function App() {
                 onOpenProfile={openUserProfile}
                 onCreatePost={() => setShowModal(true)}
                 onJoinRequiresAuth={() => setAuthMode('login')}
+                onMembershipChange={() =>
+                  setHubsRefreshKey(
+                    value => value + 1
+                  )
+                }
               />
             )}
 
@@ -939,7 +1037,9 @@ export default function App() {
               />
             )}
 
-        </main>
+          </main>
+
+        </div>
       </div>
 
 

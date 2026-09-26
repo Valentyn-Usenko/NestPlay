@@ -1489,6 +1489,62 @@ app.delete(
 
 
 // --------------------------------------------------
+// GET MY JOINED GAME HUBS
+// --------------------------------------------------
+
+app.get(
+  '/api/game-hubs/joined',
+  requireAuth,
+  async (
+    req,
+    res
+  ) => {
+    try {
+      const result =
+        await pool.query(
+          `
+          SELECT
+            game_id AS id,
+            game_name AS name,
+            game_art_url AS "gameArtUrl",
+            joined_at AS "joinedAt"
+
+          FROM game_hub_members
+
+          WHERE user_id = $1
+
+          ORDER BY
+            joined_at DESC,
+            LOWER(game_name) ASC
+
+          LIMIT 6
+          `,
+          [
+            req.user.id
+          ]
+        )
+
+      return res.json(
+        result.rows
+      )
+    } catch (error) {
+      console.error(
+        'Get joined game hubs error:',
+        error
+      )
+
+      return res
+        .status(500)
+        .json({
+          error:
+            error.message
+        })
+    }
+  }
+)
+
+
+// --------------------------------------------------
 // GET COMMUNITY STATUS
 //
 // Returns:

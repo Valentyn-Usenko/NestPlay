@@ -120,6 +120,13 @@ export function deletePost(id) {
 // GAME HUBS
 // ==================================================
 
+export function getJoinedGameHubs() {
+  return apiFetch(
+    '/api/game-hubs/joined'
+  )
+}
+
+
 export function getGameHub(
   gameId
 ) {
