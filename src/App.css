@@ -2666,6 +2666,199 @@ main {
   }
 }
 
+/* --------------------------------------------------
+   DESKTOP NAV / PROFILE GRID (base, mobile-first)
+-------------------------------------------------- */
+
+.desktop-inbox-btn,
+.desktop-settings-btn {
+  display: none;
+}
+
+.profile-content-grid,
+.profile-main-col,
+.profile-side-col {
+  display: contents;
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* --------------------------------------------------
+   DESKTOP
+-------------------------------------------------- */
+
+@media (min-width: 1200px) {
+  .hamburger-btn {
+    display: none;
+  }
+
+  .hamburger-menu {
+    display: none !important;
+  }
+
+  .desktop-inbox-btn,
+  .desktop-settings-btn {
+    display: grid;
+  }
+
+  .app-root {
+    max-width: 1360px;
+  }
+
+  .header-inner {
+    max-width: 1360px;
+    margin: 0 auto;
+  }
+
+  .feed-layout {
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 auto;
+    grid-template-columns: minmax(0, 800px) 320px;
+    gap: 1.75rem;
+  }
+
+  .profile-page {
+    max-width: 1160px;
+  }
+
+  .profile-content-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 1.75rem;
+    align-items: start;
+  }
+
+  .profile-main-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .profile-side-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .post-game-image {
+    max-height: 340px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .app-root {
+    max-width: 1440px;
+  }
+
+  .header-inner {
+    max-width: 1440px;
+  }
+
+  .feed-layout {
+    grid-template-columns: minmax(0, 860px) 340px;
+    gap: 2rem;
+  }
+
+  .profile-page {
+    max-width: 1280px;
+  }
+
+  .profile-content-grid {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 2rem;
+  }
+
+  .post-game-image {
+    max-height: 360px;
+  }
+}
+
+@media (min-width: 1728px) {
+  .app-root {
+    max-width: 1560px;
+  }
+
+  .header-inner {
+    max-width: 1560px;
+  }
+
+  .feed-layout {
+    grid-template-columns: minmax(0, 900px) 360px;
+  }
+
+  .profile-page {
+    max-width: 1360px;
+  }
+
+  .profile-content-grid {
+    grid-template-columns: minmax(0, 1fr) 360px;
+  }
+}
+
+@media (min-width: 1920px) {
+  .app-root {
+    max-width: 1680px;
+  }
+
+  .header-inner {
+    max-width: 1680px;
+  }
+
+  .feed-layout {
+    grid-template-columns: minmax(0, 920px) 400px;
+    gap: 2.25rem;
+  }
+
+  .profile-page {
+    max-width: 1440px;
+  }
+
+  .profile-content-grid {
+    grid-template-columns: minmax(0, 1fr) 400px;
+    gap: 2.25rem;
+  }
+
+  .post-game-image {
+    max-height: 400px;
+  }
+}
+
+@media (min-width: 2200px) {
+  .app-root {
+    max-width: 1900px;
+  }
+
+  .header-inner {
+    max-width: 1900px;
+  }
+
+  .feed-layout {
+    grid-template-columns: minmax(0, 960px) 420px;
+    gap: 2.5rem;
+  }
+
+  .profile-page {
+    max-width: 1560px;
+  }
+
+  .profile-content-grid {
+    grid-template-columns: minmax(0, 1fr) 420px;
+    gap: 2.5rem;
+  }
+}
+
 /* ==================================================
    GAME HUB
 ================================================== */
