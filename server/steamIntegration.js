@@ -1,0 +1,910 @@
+/* global fetch, process, require, URL, URLSearchParams, AbortSignal */
+
+const {
+  createHash,
+  randomBytes
+} = require('crypto')
+
+
+const STEAM_PROVIDER =
+  'steam'
+
+const STEAM_OPENID_ENDPOINT =
+  'https://steamcommunity.com/openid/login'
+
+const OPENID_NAMESPACE =
+  'http://specs.openid.net/auth/2.0'
+
+const OPENID_IDENTIFIER_SELECT =
+  'http://specs.openid.net/auth/2.0/identifier_select'
+
+const LINK_STATE_LIFETIME_MINUTES =
+  10
+
+
+function hashLinkState(
+  state
+) {
+  return createHash(
+    'sha256'
+  )
+    .update(
+      state,
+      'utf8'
+    )
+    .digest('hex')
+}
+
+
+function createLinkState() {
+  return randomBytes(32)
+    .toString('base64url')
+}
+
+
+function getSteamCallbackUrl() {
+  const raw =
+    String(
+      process.env
+        .STEAM_CALLBACK_URL ||
+      ''
+    ).trim()
+
+  if (!raw) {
+    const error =
+      new Error(
+        'STEAM_CALLBACK_URL is not configured'
+      )
+
+    error.statusCode = 503
+
+    throw error
+  }
+
+  let callbackUrl
+
+  try {
+    callbackUrl =
+      new URL(raw)
+  } catch {
+    const error =
+      new Error(
+        'STEAM_CALLBACK_URL is invalid'
+      )
+
+    error.statusCode = 500
+
+    throw error
+  }
+
+  const isLocal =
+    callbackUrl.hostname ===
+      'localhost' ||
+    callbackUrl.hostname ===
+      '127.0.0.1'
+
+  if (
+    callbackUrl.protocol !==
+      'https:' &&
+    !isLocal
+  ) {
+    const error =
+      new Error(
+        'STEAM_CALLBACK_URL must use HTTPS'
+      )
+
+    error.statusCode = 500
+
+    throw error
+  }
+
+  return callbackUrl
+}
+
+
+function buildSteamLoginUrl(
+  state
+) {
+  const callbackUrl =
+    getSteamCallbackUrl()
+
+  callbackUrl.searchParams.set(
+    'state',
+    state
+  )
+
+  const realm =
+    `${callbackUrl.protocol}//${callbackUrl.host}/`
+
+  const steamUrl =
+    new URL(
+      STEAM_OPENID_ENDPOINT
+    )
+
+  steamUrl.searchParams.set(
+    'openid.ns',
+    OPENID_NAMESPACE
+  )
+
+  steamUrl.searchParams.set(
+    'openid.mode',
+    'checkid_setup'
+  )
+
+  steamUrl.searchParams.set(
+    'openid.return_to',
+    callbackUrl.toString()
+  )
+
+  steamUrl.searchParams.set(
+    'openid.realm',
+    realm
+  )
+
+  steamUrl.searchParams.set(
+    'openid.identity',
+    OPENID_IDENTIFIER_SELECT
+  )
+
+  steamUrl.searchParams.set(
+    'openid.claimed_id',
+    OPENID_IDENTIFIER_SELECT
+  )
+
+  return steamUrl.toString()
+}
+
+
+function getSingleQueryValue(
+  value
+) {
+  if (
+    typeof value !==
+    'string'
+  ) {
+    return null
+  }
+
+  return value
+}
+
+
+function extractSteamId(
+  claimedId
+) {
+  if (
+    typeof claimedId !==
+    'string'
+  ) {
+    return null
+  }
+
+  const match =
+    claimedId.match(
+      /^https?:\/\/steamcommunity\.com\/openid\/id\/([0-9]+)$/
+    )
+
+  if (!match) {
+    return null
+  }
+
+  const steamId =
+    match[1]
+
+  try {
+    const value =
+      BigInt(steamId)
+
+    if (
+      value <= 0n ||
+      value >
+        18446744073709551615n
+    ) {
+      return null
+    }
+  } catch {
+    return null
+  }
+
+  return steamId
+}
+
+
+function validateOpenIdCallback(
+  query,
+  state
+) {
+  const mode =
+    getSingleQueryValue(
+      query[
+        'openid.mode'
+      ]
+    )
+
+  if (
+    mode !==
+    'id_res'
+  ) {
+    throw new Error(
+      'Steam did not return a successful OpenID response'
+    )
+  }
+
+  const namespace =
+    getSingleQueryValue(
+      query[
+        'openid.ns'
+      ]
+    )
+
+  if (
+    namespace !==
+    OPENID_NAMESPACE
+  ) {
+    throw new Error(
+      'Invalid Steam OpenID namespace'
+    )
+  }
+
+  const endpoint =
+    getSingleQueryValue(
+      query[
+        'openid.op_endpoint'
+      ]
+    )
+
+  if (
+    endpoint !==
+    STEAM_OPENID_ENDPOINT
+  ) {
+    throw new Error(
+      'Invalid Steam OpenID endpoint'
+    )
+  }
+
+  const claimedId =
+    getSingleQueryValue(
+      query[
+        'openid.claimed_id'
+      ]
+    )
+
+  const identity =
+    getSingleQueryValue(
+      query[
+        'openid.identity'
+      ]
+    )
+
+  if (
+    !claimedId ||
+    claimedId !== identity
+  ) {
+    throw new Error(
+      'Invalid Steam OpenID identity'
+    )
+  }
+
+  const steamId =
+    extractSteamId(
+      claimedId
+    )
+
+  if (!steamId) {
+    throw new Error(
+      'Steam returned an invalid SteamID'
+    )
+  }
+
+  const returnTo =
+    getSingleQueryValue(
+      query[
+        'openid.return_to'
+      ]
+    )
+
+  const expectedReturnTo =
+    getSteamCallbackUrl()
+
+  expectedReturnTo
+    .searchParams
+    .set(
+      'state',
+      state
+    )
+
+  if (
+    !returnTo ||
+    returnTo !==
+      expectedReturnTo.toString()
+  ) {
+    throw new Error(
+      'Steam OpenID return URL did not match'
+    )
+  }
+
+  const signedFieldsRaw =
+    getSingleQueryValue(
+      query[
+        'openid.signed'
+      ]
+    )
+
+  if (!signedFieldsRaw) {
+    throw new Error(
+      'Steam OpenID signature information is missing'
+    )
+  }
+
+  const signedFields =
+    new Set(
+      signedFieldsRaw
+        .split(',')
+        .map(
+          field =>
+            field.trim()
+        )
+        .filter(Boolean)
+    )
+
+  const requiredSignedFields = [
+    'op_endpoint',
+    'claimed_id',
+    'identity',
+    'return_to',
+    'response_nonce',
+    'assoc_handle'
+  ]
+
+  for (
+    const field of
+      requiredSignedFields
+  ) {
+    if (
+      !signedFields.has(
+        field
+      )
+    ) {
+      throw new Error(
+        `Steam OpenID response did not sign ${field}`
+      )
+    }
+  }
+
+  return steamId
+}
+
+
+async function verifyWithSteam(
+  query
+) {
+  const body =
+    new URLSearchParams()
+
+  for (
+    const [
+      key,
+      value
+    ] of
+      Object.entries(query)
+  ) {
+    if (
+      key.startsWith(
+        'openid.'
+      ) &&
+      typeof value ===
+        'string'
+    ) {
+      body.set(
+        key,
+        value
+      )
+    }
+  }
+
+  body.set(
+    'openid.mode',
+    'check_authentication'
+  )
+
+  const response =
+    await fetch(
+      STEAM_OPENID_ENDPOINT,
+      {
+        method:
+          'POST',
+
+        headers: {
+          'Content-Type':
+            'application/x-www-form-urlencoded'
+        },
+
+        body,
+
+        signal:
+          AbortSignal.timeout(
+            10000
+          )
+      }
+    )
+
+  if (!response.ok) {
+    throw new Error(
+      `Steam OpenID verification failed with HTTP ${response.status}`
+    )
+  }
+
+  const responseText =
+    await response.text()
+
+  const values =
+    new Map()
+
+  for (
+    const line of
+      responseText.split(
+        /\r?\n/
+      )
+  ) {
+    const separator =
+      line.indexOf(':')
+
+    if (separator <= 0) {
+      continue
+    }
+
+    values.set(
+      line.slice(
+        0,
+        separator
+      ),
+      line.slice(
+        separator + 1
+      )
+    )
+  }
+
+  return (
+    values.get(
+      'is_valid'
+    ) ===
+    'true'
+  )
+}
+
+
+async function createSteamLink(
+  pool,
+  userId
+) {
+  const rawState =
+    createLinkState()
+
+  const stateHash =
+    hashLinkState(
+      rawState
+    )
+
+  const client =
+    await pool.connect()
+
+  try {
+    await client.query(
+      'BEGIN'
+    )
+
+    await client.query(
+      `
+      DELETE FROM external_account_link_states
+      WHERE
+        expires_at <= NOW()
+        OR used_at IS NOT NULL
+      `
+    )
+
+    await client.query(
+      `
+      DELETE FROM external_account_link_states
+      WHERE
+        user_id = $1
+        AND provider = $2
+      `,
+      [
+        userId,
+        STEAM_PROVIDER
+      ]
+    )
+
+    await client.query(
+      `
+      INSERT INTO external_account_link_states (
+        state_hash,
+        user_id,
+        provider,
+        expires_at
+      )
+      VALUES (
+        $1,
+        $2,
+        $3,
+        NOW() +
+          ($4 * INTERVAL '1 minute')
+      )
+      `,
+      [
+        stateHash,
+        userId,
+        STEAM_PROVIDER,
+        LINK_STATE_LIFETIME_MINUTES
+      ]
+    )
+
+    await client.query(
+      'COMMIT'
+    )
+  } catch (error) {
+    try {
+      await client.query(
+        'ROLLBACK'
+      )
+    } catch {
+      // Nothing else to do.
+    }
+
+    throw error
+  } finally {
+    client.release()
+  }
+
+  return {
+    authorizationUrl:
+      buildSteamLoginUrl(
+        rawState
+      )
+  }
+}
+
+
+async function consumeSteamLink(
+  pool,
+  rawState,
+  steamId
+) {
+  const stateHash =
+    hashLinkState(
+      rawState
+    )
+
+  const stateResult =
+    await pool.query(
+      `
+      UPDATE external_account_link_states
+
+      SET used_at = NOW()
+
+      WHERE
+        state_hash = $1
+        AND provider = $2
+        AND used_at IS NULL
+        AND expires_at > NOW()
+
+      RETURNING user_id
+      `,
+      [
+        stateHash,
+        STEAM_PROVIDER
+      ]
+    )
+
+  if (
+    stateResult.rows.length !==
+    1
+  ) {
+    const error =
+      new Error(
+        'Steam linking request is invalid, expired, or already used'
+      )
+
+    error.statusCode = 400
+
+    throw error
+  }
+
+  const userId =
+    stateResult
+      .rows[0]
+      .user_id
+
+  const client =
+    await pool.connect()
+
+  try {
+    await client.query(
+      'BEGIN'
+    )
+
+    const userConnection =
+      await client.query(
+        `
+        SELECT
+          user_id,
+          external_user_id
+
+        FROM user_external_accounts
+
+        WHERE
+          user_id = $1
+          AND provider = $2
+
+        FOR UPDATE
+        `,
+        [
+          userId,
+          STEAM_PROVIDER
+        ]
+      )
+
+    if (
+      userConnection.rows.length >
+        0 &&
+      userConnection
+        .rows[0]
+        .external_user_id !==
+        steamId
+    ) {
+      const error =
+        new Error(
+          'This NestPlay account already has a different Steam account connected'
+        )
+
+      error.statusCode = 409
+
+      throw error
+    }
+
+    const steamConnection =
+      await client.query(
+        `
+        SELECT
+          user_id
+
+        FROM user_external_accounts
+
+        WHERE
+          provider = $1
+          AND external_user_id = $2
+
+        FOR UPDATE
+        `,
+        [
+          STEAM_PROVIDER,
+          steamId
+        ]
+      )
+
+    if (
+      steamConnection.rows.length >
+        0 &&
+      steamConnection
+        .rows[0]
+        .user_id !==
+        userId
+    ) {
+      const error =
+        new Error(
+          'This Steam account is already connected to another NestPlay account'
+        )
+
+      error.statusCode = 409
+
+      throw error
+    }
+
+    if (
+      userConnection.rows.length ===
+      0
+    ) {
+      await client.query(
+        `
+        INSERT INTO user_external_accounts (
+          user_id,
+          provider,
+          external_user_id
+        )
+        VALUES (
+          $1,
+          $2,
+          $3
+        )
+        `,
+        [
+          userId,
+          STEAM_PROVIDER,
+          steamId
+        ]
+      )
+    } else {
+      await client.query(
+        `
+        UPDATE user_external_accounts
+
+        SET updated_at = NOW()
+
+        WHERE
+          user_id = $1
+          AND provider = $2
+        `,
+        [
+          userId,
+          STEAM_PROVIDER
+        ]
+      )
+    }
+
+    await client.query(
+      'COMMIT'
+    )
+
+    return {
+      userId,
+      steamId
+    }
+  } catch (error) {
+    try {
+      await client.query(
+        'ROLLBACK'
+      )
+    } catch {
+      // Nothing else to do.
+    }
+
+    if (
+      error.code ===
+      '23505'
+    ) {
+      const conflict =
+        new Error(
+          'This Steam account or NestPlay account is already connected'
+        )
+
+      conflict.statusCode = 409
+
+      throw conflict
+    }
+
+    throw error
+  } finally {
+    client.release()
+  }
+}
+
+function registerSteamIntegrationRoutes({
+  app,
+  pool,
+  requireAuth,
+  ensureProfile
+}) {
+  app.post(
+    '/api/integrations/steam/link/start',
+    requireAuth,
+    async (
+      req,
+      res
+    ) => {
+      try {
+        await ensureProfile(
+          req.user
+        )
+
+        const result =
+          await createSteamLink(
+            pool,
+            req.user.id
+          )
+
+        return res.json(
+          result
+        )
+      } catch (error) {
+        console.error(
+          'Start Steam link error:',
+          error
+        )
+
+        return res
+          .status(
+            error.statusCode ||
+            500
+          )
+          .json({
+            error:
+              error.message ||
+              'Could not start Steam linking'
+          })
+      }
+    }
+  )
+
+
+  app.get(
+    '/api/integrations/steam/callback',
+    async (
+      req,
+      res
+    ) => {
+      try {
+        const state =
+          getSingleQueryValue(
+            req.query.state
+          )
+
+        if (!state) {
+          return res
+            .status(400)
+            .send(
+              'Steam linking state is missing.'
+            )
+        }
+
+        const steamId =
+          validateOpenIdCallback(
+            req.query,
+            state
+          )
+
+        const isValid =
+          await verifyWithSteam(
+            req.query
+          )
+
+        if (!isValid) {
+          return res
+            .status(400)
+            .send(
+              'Steam could not verify this sign-in.'
+            )
+        }
+
+        await consumeSteamLink(
+          pool,
+          state,
+          steamId
+        )
+
+        return res
+          .status(200)
+          .send(
+            'Steam account connected successfully. You can return to NestPlay.'
+          )
+      } catch (error) {
+        console.error(
+          'Steam callback error:',
+          error
+        )
+
+        return res
+          .status(
+            error.statusCode ||
+            400
+          )
+          .send(
+            'Steam account could not be connected.'
+          )
+      }
+    }
+  )
+}
+
+
+module.exports = {
+  registerSteamIntegrationRoutes,
+
+  _test: {
+    buildSteamLoginUrl,
+    createSteamLink,
+    consumeSteamLink,
+    extractSteamId,
+    hashLinkState,
+    validateOpenIdCallback
+  }
+}

@@ -36,6 +36,10 @@ const {
   registerPresenceRoutes
 } = require('./presence')
 
+const {
+  registerSteamIntegrationRoutes
+} = require('./steamIntegration')
+
 const app = express()
 
 const PORT =
@@ -284,6 +288,13 @@ registerPresenceRoutes({
   requireAuth,
   signProfile:
     addSignedAvatarUrl
+})
+
+registerSteamIntegrationRoutes({
+  app,
+  pool,
+  requireAuth,
+  ensureProfile
 })
 
 achievementService
