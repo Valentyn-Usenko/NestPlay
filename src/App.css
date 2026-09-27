@@ -5195,10 +5195,7 @@ main {
     cursor: pointer;
 
     transition:
-      color 150ms ease,
-      background 150ms ease,
-      border-color 150ms ease,
-      transform 150ms ease;
+      none;
   }
 
   .left-rail-nav-item {
@@ -5455,9 +5452,6 @@ main {
         255,
         0.055
       );
-
-    transform:
-      translateX(2px);
   }
 
   .left-rail-hub-item.active {
@@ -5743,5 +5737,284 @@ main {
   50% {
     opacity: 1;
     transform: translateY(-2px);
+  }
+}
+
+
+
+/* Left rail instant hover response */
+.left-rail-nav-item,
+.left-rail-hub-item,
+.left-rail-nav-icon {
+  transition: none !important;
+}
+
+.left-rail-hub-item:hover {
+  transform: none !important;
+}
+
+/* ==================================================
+   PERFORMANCE OPTIMIZATIONS
+================================================== */
+
+html {
+  scroll-behavior: auto;
+}
+
+/* Keep the orange atmosphere without GPU blur */
+body::before {
+  filter: none !important;
+  width: 560px;
+  height: 420px;
+  background:
+    radial-gradient(
+      ellipse at 20% 15%,
+      rgba(255, 90, 54, 0.16) 0%,
+      rgba(255, 90, 54, 0.07) 32%,
+      transparent 70%
+    );
+}
+
+/* Masking a large fixed SVG is expensive */
+body::after {
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  opacity: 0.42;
+}
+
+/* Avoid live backdrop blur on the permanent header */
+header {
+  background: rgba(6, 6, 6, 0.96) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Sidebar interaction should always be immediate */
+.left-rail-nav-item,
+.left-rail-hub-item,
+.left-rail-nav-icon {
+  transition: none !important;
+}
+
+.left-rail-hub-item:hover {
+  transform: none !important;
+}
+
+/* ==================================================
+   FULL DESKTOP SETTINGS + CHATS
+================================================== */
+
+@media (min-width: 900px) {
+  .modal-overlay {
+    padding: 16px;
+  }
+
+  .settings-modal,
+  .inbox-modal,
+  .chat-modal {
+    width: calc(100vw - 32px) !important;
+    max-width: none !important;
+
+    height: calc(100vh - 32px) !important;
+    max-height: none !important;
+
+    border-radius: 24px;
+  }
+
+  .settings-modal {
+    padding:
+      2.75rem
+      clamp(2.5rem, 5vw, 6rem)
+      3.5rem;
+
+    overflow-y: auto;
+  }
+
+  .settings-title {
+    font-size: clamp(2rem, 3vw, 2.8rem);
+    margin-bottom: 2rem;
+  }
+
+  .settings-section {
+    padding: 1.6rem 0;
+  }
+
+  .settings-row {
+    min-height: 72px;
+    padding: 1rem 0;
+  }
+
+  .inbox-modal {
+    padding:
+      2.5rem
+      clamp(2rem, 4vw, 4.5rem);
+
+    overflow-y: auto;
+  }
+
+  .inbox-request-card {
+    min-height: 76px;
+    padding: 1rem 1.2rem;
+  }
+
+  .chat-modal {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .chat-header {
+    padding:
+      1.15rem
+      1.5rem;
+  }
+
+  .chat-friend-name {
+    font-size: 1.05rem;
+  }
+
+  .chat-messages {
+    padding:
+      1.5rem
+      clamp(1.5rem, 4vw, 4rem);
+  }
+
+  .chat-bubble {
+    max-width: min(720px, 72%);
+  }
+
+  .chat-input-row {
+    padding:
+      1.1rem
+      clamp(1.5rem, 4vw, 4rem);
+  }
+
+  .chat-input {
+    min-height: 52px;
+    font-size: 1rem;
+  }
+
+  .chat-send-btn {
+    width: 52px;
+    height: 52px;
+  }
+}
+
+/* ==================================================
+   GAME DISCOVERY SEARCH
+================================================== */
+
+.game-discovery-search {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.game-discovery-search > input {
+  width: 100%;
+}
+
+.game-discovery-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 80;
+  display: none;
+  max-height: 420px;
+  overflow-y: auto;
+  background: #0d0d0f;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.48);
+}
+
+.game-discovery-search:focus-within
+.game-discovery-panel {
+  display: block;
+}
+
+.game-discovery-heading {
+  padding: 0.75rem 0.9rem 0.55rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.game-discovery-status {
+  padding: 1rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.game-discovery-result {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  color: var(--text);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.055);
+  cursor: pointer;
+  transition: none;
+}
+
+.game-discovery-result:hover,
+.game-discovery-result:focus-visible {
+  background: rgba(255, 90, 54, 0.08);
+}
+
+.game-discovery-result img,
+.game-discovery-placeholder {
+  flex-shrink: 0;
+  width: 52px;
+  height: 38px;
+  border-radius: 8px;
+}
+
+.game-discovery-result img {
+  object-fit: cover;
+}
+
+.game-discovery-placeholder {
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.045);
+  font-size: 1rem;
+}
+
+.game-discovery-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.15rem;
+}
+
+.game-discovery-copy strong {
+  overflow: hidden;
+  font-size: 0.88rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.game-discovery-copy > span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+@media (max-width: 760px) {
+  .game-discovery-search {
+    width: 100%;
+  }
+
+  .game-discovery-panel {
+    max-height: 55vh;
   }
 }

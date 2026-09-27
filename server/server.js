@@ -3962,7 +3962,7 @@ app.patch(
 
 
 // ==================================================
-// AVATAR STORAGE — AMAZON S3
+// AVATAR STORAGE â€” AMAZON S3
 // ==================================================
 
 
@@ -4211,12 +4211,176 @@ app.use(
 
 
 // ==================================================
+// NESTPLAY GAME DISCOVERY
+// ==================================================
+
+app.get(
+  '/api/games/discover',
+  async (req, res) => {
+    try {
+      const query =
+        String(
+          req.query.q || ''
+        ).trim()
+
+      const result =
+        await pool.query(
+          `
+          WITH matching_posts AS (
+            SELECT
+              COALESCE(
+                game_id::text,
+                LOWER(
+                  TRIM(game_name)
+                )
+              ) AS game_key,
+
+              game_id,
+              game_name,
+              game_art_url,
+              created_at
+
+            FROM posts
+
+            WHERE
+              game_name IS NOT NULL
+
+              AND
+              TRIM(game_name) <> ''
+
+              AND (
+                $1 = ''
+
+                OR
+
+                game_name
+                  ILIKE
+                  '%' || $1 || '%'
+              )
+          ),
+
+          totals AS (
+            SELECT
+              game_key,
+
+              COUNT(*)::int
+                AS post_count,
+
+              MAX(created_at)
+                AS latest_post_at
+
+            FROM matching_posts
+
+            GROUP BY
+              game_key
+          ),
+
+          latest AS (
+            SELECT DISTINCT ON (
+              game_key
+            )
+              game_key,
+              game_id,
+              game_name,
+              game_art_url
+
+            FROM matching_posts
+
+            ORDER BY
+              game_key,
+              created_at DESC
+          )
+
+          SELECT
+            COALESCE(
+              latest.game_id::text,
+              latest.game_key
+            ) AS id,
+
+            latest.game_name
+              AS name,
+
+            latest.game_art_url
+              AS "gameArtUrl",
+
+            totals.post_count
+              AS "postCount",
+
+            totals.latest_post_at
+              AS "latestPostAt"
+
+          FROM totals
+
+          JOIN latest
+            USING (game_key)
+
+          ORDER BY
+            CASE
+              WHEN
+                $1 <> ''
+
+                AND
+
+                LOWER(
+                  latest.game_name
+                ) =
+                LOWER($1)
+
+                THEN 0
+
+              WHEN
+                $1 <> ''
+
+                AND
+
+                LOWER(
+                  latest.game_name
+                )
+                LIKE
+                LOWER($1) || '%'
+
+                THEN 1
+
+              ELSE 2
+            END,
+
+            totals.post_count DESC,
+            totals.latest_post_at DESC
+
+          LIMIT 12
+          `,
+          [
+            query
+          ]
+        )
+
+      res.json({
+        results:
+          result.rows
+      })
+    } catch (error) {
+      console.error(
+        'Game discovery error:',
+        error
+      )
+
+      res
+        .status(500)
+        .json({
+          error:
+            'Could not load NestPlay games'
+        })
+    }
+  }
+)
+
+// ==================================================
 // RAWG GAME SEARCH
 //
 // Browser
-// ↓
+// â†“
 // NestPlay backend
-// ↓
+// â†“
 // RAWG
 //
 // RAWG API key stays server-side.

@@ -25,7 +25,13 @@ export default function FriendsPickerModal({
   const [friends, setFriends] = useState([])
   const [unreadMap, setUnreadMap] = useState({})
   const [loading, setLoading] = useState(true)
-  const [chatFriend, setChatFriend] = useState(null)
+  const [chatFriend, setChatFriend] =
+    useState(
+      () =>
+        window.history.state
+          ?.nestplayChatFriend ??
+        null
+    )
 
   const mountedRef = useRef(true)
 
@@ -125,11 +131,43 @@ export default function FriendsPickerModal({
     }
   }, [session.user.id])
 
+  useEffect(() => {
+    const handleChatHistory =
+      event => {
+        setChatFriend(
+          event.state
+            ?.nestplayChatFriend ??
+          null
+        )
+      }
+
+    window.addEventListener(
+      'popstate',
+      handleChatHistory
+    )
+
+    return () => {
+      window.removeEventListener(
+        'popstate',
+        handleChatHistory
+      )
+    }
+  }, [])
+
   const handleOpenChat = friend => {
     setUnreadMap(prev => ({
       ...prev,
       [friend.id]: 0
     }))
+
+    window.history.pushState(
+      {
+        ...window.history.state,
+        nestplayChatFriend:
+          friend
+      },
+      ''
+    )
 
     setChatFriend(friend)
   }
@@ -140,7 +178,7 @@ export default function FriendsPickerModal({
         session={session}
         friend={chatFriend}
         onClose={() =>
-          setChatFriend(null)
+          window.history.back()
         }
       />
     )

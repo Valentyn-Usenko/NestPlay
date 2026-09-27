@@ -138,6 +138,183 @@ export default function App() {
 
 
   // ==================================================
+  // BROWSER BACK / FORWARD NAVIGATION
+  // ==================================================
+
+  useEffect(() => {
+    const currentState =
+      window.history.state
+
+    const navigationState = {
+      nestplay: true,
+
+      activePage,
+
+      activePost:
+        activePost
+          ? {
+              id:
+                activePost.id
+            }
+          : null,
+
+      activeGame,
+
+      activeUserId,
+
+      profileSection,
+
+      showSettings,
+
+      showMessages
+    }
+
+    const sameState =
+      currentState?.nestplay === true &&
+      currentState.activePage ===
+        navigationState.activePage &&
+      (
+        currentState.activePost?.id ??
+        null
+      ) ===
+        (
+          navigationState.activePost?.id ??
+          null
+        ) &&
+      (
+        currentState.activeGame?.id ??
+        null
+      ) ===
+        (
+          navigationState.activeGame?.id ??
+          null
+        ) &&
+      (
+        currentState.activeUserId ??
+        null
+      ) ===
+        (
+          navigationState.activeUserId ??
+          null
+        ) &&
+      (
+        currentState.profileSection ??
+        null
+      ) ===
+        (
+          navigationState.profileSection ??
+          null
+        ) &&
+      Boolean(
+        currentState.showSettings
+      ) ===
+        Boolean(
+          navigationState.showSettings
+        ) &&
+      Boolean(
+        currentState.showMessages
+      ) ===
+        Boolean(
+          navigationState.showMessages
+        )
+
+    if (
+      !currentState?.nestplay
+    ) {
+      window.history.replaceState(
+        navigationState,
+        ''
+      )
+
+      return
+    }
+
+    if (!sameState) {
+      window.history.pushState(
+        navigationState,
+        ''
+      )
+    }
+  }, [
+    activePage,
+    activePost,
+    activeGame,
+    activeUserId,
+    profileSection,
+    showSettings,
+    showMessages
+  ])
+
+
+  useEffect(() => {
+    const handlePopState =
+      event => {
+        const state =
+          event.state
+
+        if (!state?.nestplay) {
+          return
+        }
+
+        setActivePage(
+          state.activePage ??
+          'feed'
+        )
+
+        setActivePost(
+          state.activePost ??
+          null
+        )
+
+        setActiveGame(
+          state.activeGame ??
+          null
+        )
+
+        setActiveUserId(
+          state.activeUserId ??
+          null
+        )
+
+        setProfileSection(
+          state.profileSection ??
+          null
+        )
+
+        setShowSettings(
+          Boolean(
+            state.showSettings
+          )
+        )
+
+        setShowMessages(
+          Boolean(
+            state.showMessages
+          )
+        )
+
+        setMenuOpen(false)
+
+        window.scrollTo({
+          top: 0,
+          behavior: 'auto'
+        })
+      }
+
+    window.addEventListener(
+      'popstate',
+      handlePopState
+    )
+
+    return () => {
+      window.removeEventListener(
+        'popstate',
+        handlePopState
+      )
+    }
+  }, [])
+
+  // ==================================================
   // AUTH SESSION
   // ==================================================
 
@@ -399,7 +576,7 @@ export default function App() {
 
       window.scrollTo({
         top: 0,
-        behavior: 'smooth'
+        behavior: 'auto'
       })
     }
 
@@ -442,7 +619,7 @@ export default function App() {
 
       window.scrollTo({
         top: 0,
-        behavior: 'smooth'
+        behavior: 'auto'
       })
     }
 
@@ -455,7 +632,7 @@ export default function App() {
 
       window.scrollTo({
         top: 0,
-        behavior: 'smooth'
+        behavior: 'auto'
       })
     }
 
@@ -472,7 +649,7 @@ export default function App() {
 
       window.scrollTo({
         top: 0,
-        behavior: 'smooth'
+        behavior: 'auto'
       })
     }
 
@@ -505,7 +682,7 @@ export default function App() {
 
       window.scrollTo({
         top: 0,
-        behavior: 'smooth'
+        behavior: 'auto'
       })
     }
 
@@ -527,7 +704,7 @@ export default function App() {
 
       window.scrollTo({
         top: 0,
-        behavior: 'smooth'
+        behavior: 'auto'
       })
     }
 
@@ -586,7 +763,7 @@ export default function App() {
 
       window.scrollTo({
         top: 0,
-        behavior: 'smooth'
+        behavior: 'auto'
       })
     }
 
@@ -848,6 +1025,12 @@ export default function App() {
             onProfile={
               openOwnProfile
             }
+            onMessages={() =>
+              setShowMessages(true)
+            }
+            onSettings={() =>
+              setShowSettings(true)
+            }
             onProfileSection={
               openOwnProfileSection
             }
@@ -922,8 +1105,7 @@ export default function App() {
 
                     window.scrollTo({
                       top: 0,
-                      behavior:
-                        'smooth'
+                      behavior: 'auto'
                     })
                   }
                 }
@@ -1095,9 +1277,7 @@ export default function App() {
       {showSettings && (
         <SettingsModal
           onClose={() =>
-            setShowSettings(
-              false
-            )
+            window.history.back()
           }
           session={
             session
@@ -1140,9 +1320,7 @@ export default function App() {
             session
           }
           onClose={() =>
-            setShowMessages(
-              false
-            )
+            window.history.back()
           }
         />
       )}

@@ -1,4 +1,4 @@
-﻿import React, {
+import React, {
   useEffect,
   useState
 } from 'react'
@@ -42,26 +42,19 @@ function NavIcon({
     )
   }
 
-  if (type === 'friends') {
+  if (type === 'chats') {
     return (
       <svg {...commonProps}>
-        <circle cx="9" cy="8" r="3" />
-        <path d="M3.5 19c.6-3.5 2.5-5.2 5.5-5.2s4.9 1.7 5.5 5.2" />
-        <path d="M15 6.2a3 3 0 0 1 0 5.6" />
-        <path d="M16 14.2c2.5.5 4 2.1 4.5 4.8" />
+        <path d="M4 5.5h16v10H9l-5 4v-14Z" />
       </svg>
     )
   }
 
-  if (type === 'achievements') {
+  if (type === 'settings') {
     return (
       <svg {...commonProps}>
-        <path d="M8 4h8v5a4 4 0 0 1-8 0V4Z" />
-        <path d="M8 6H4v1a4 4 0 0 0 4 4" />
-        <path d="M16 6h4v1a4 4 0 0 1-4 4" />
-        <path d="M12 13v4" />
-        <path d="M8.5 20h7" />
-        <path d="M10 17h4" />
+        <path d="M9.7 3.2h4.6l.5 2 1.5.9 2-.6 2.3 4-1.5 1.4v1.8l1.5 1.4-2.3 4-2-.6-1.5.9-.5 2H9.7l-.5-2-1.5-.9-2 .6-2.3-4L4.9 12.7v-1.8L3.4 9.5l2.3-4 2 .6 1.5-.9.5-2Z" />
+        <circle cx="12" cy="11.8" r="3.1" />
       </svg>
     )
   }
@@ -76,7 +69,8 @@ export default function LeftNavigationRail({
   activeGameId = null,
   onHome,
   onProfile,
-  onProfileSection,
+  onMessages,
+  onSettings,
   onOpenGameHub,
   hubsRefreshKey = 0
 }) {
@@ -202,32 +196,23 @@ export default function LeftNavigationRail({
                   Profile
                 </span>
               </button>
-
-
               <button
                 type="button"
                 className={
                   navButtonClass(
-                    'friends'
+                    'chats'
                   )
                 }
-                onClick={() =>
-                  onProfileSection?.(
-                    'friends'
-                  )
-                }
-                aria-current={
-                  activeItem === 'friends'
-                    ? 'page'
-                    : undefined
+                onClick={
+                  onMessages
                 }
               >
                 <span className="left-rail-nav-icon">
-                  <NavIcon type="friends" />
+                  <NavIcon type="chats" />
                 </span>
 
                 <span>
-                  Friends
+                  Chats
                 </span>
               </button>
 
@@ -236,29 +221,19 @@ export default function LeftNavigationRail({
                 type="button"
                 className={
                   navButtonClass(
-                    'achievements'
+                    'settings'
                   )
                 }
-                onClick={() =>
-                  onProfileSection?.(
-                    'achievements'
-                  )
-                }
-                aria-current={
-                  activeItem ===
-                    'achievements'
-                    ? 'page'
-                    : undefined
+                onClick={
+                  onSettings
                 }
               >
                 <span className="left-rail-nav-icon">
-                  <NavIcon
-                    type="achievements"
-                  />
+                  <NavIcon type="settings" />
                 </span>
 
                 <span>
-                  Achievements
+                  Settings
                 </span>
               </button>
             </>
@@ -341,7 +316,7 @@ export default function LeftNavigationRail({
                         className="left-rail-hub-fallback"
                         aria-hidden="true"
                       >
-                        🎮
+                        ??
                       </span>
                     )}
 

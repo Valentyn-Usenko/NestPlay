@@ -1,4 +1,5 @@
 import PinnedBadges from './PinnedBadges'
+import GameDiscoverySearch from './GameDiscoverySearch'
 import React, { useEffect, useState } from 'react'
 import {
   getFriendCount,
@@ -21,10 +22,6 @@ export default function PostList({
 
   const [sortBy, setSortBy] =
     useState('recommended')
-
-  const [search, setSearch] =
-    useState('')
-
   const [votingId, setVotingId] =
     useState(null)
 
@@ -62,12 +59,9 @@ export default function PostList({
     }
 
     try {
-      const cleanSearch =
-        search.trim()
-
       const postsData =
         await getPosts(
-          cleanSearch,
+          '',
           {
             feed: feedMode,
             sort: sortBy
@@ -75,8 +69,7 @@ export default function PostList({
         )
 
       setLastFetchWasGlobal(
-        feedMode === 'home' &&
-        cleanSearch === ''
+        feedMode === 'home'
       )
 
       setPosts(postsData)
@@ -403,13 +396,9 @@ export default function PostList({
       </div>
 
       <div className="feed-controls">
-        <input
-          placeholder="Search by game..."
-          value={search}
-          onChange={e =>
-            setSearch(
-              e.target.value
-            )
+        <GameDiscoverySearch
+          onOpenGameHub={
+            onOpenGameHub
           }
         />
 
@@ -435,14 +424,6 @@ export default function PostList({
             Most upvoted
           </option>
         </select>
-
-        <button
-          onClick={() =>
-            fetchPosts(true)
-          }
-        >
-          Apply
-        </button>
       </div>
     </>
   )
@@ -463,7 +444,7 @@ export default function PostList({
 
   if (!posts.length) {
     let emptyMessage =
-      'No posts yet — create one!'
+      'No posts yet \u2014 create one!'
 
     if (
       feedMode === 'friends'
@@ -524,9 +505,7 @@ export default function PostList({
                   'home' &&
                   post.isFriend && (
                     <>
-                      <span className="post-meta-separator">
-                        ·
-                      </span>
+                      <span className="post-meta-separator">&middot;</span>
 
                       <span className="friend-post-label">
                         Friend
@@ -534,9 +513,7 @@ export default function PostList({
                     </>
                   )}
 
-                <span className="post-meta-separator">
-                  ·
-                </span>
+                <span className="post-meta-separator">&middot;</span>
 
                 {new Date(
                   post.created_at
@@ -580,9 +557,7 @@ export default function PostList({
                         )
                       }
                     >
-                      <span className="post-game-hub-icon">
-                        🎮
-                      </span>
+                      <span className="post-game-hub-icon">&#127918;</span>
 
                       <span>
                         {
@@ -590,9 +565,7 @@ export default function PostList({
                         }
                       </span>
 
-                      <span className="post-game-hub-arrow">
-                        ›
-                      </span>
+                      <span className="post-game-hub-arrow">&rsaquo;</span>
                     </button>
                   )}
                 </div>
@@ -635,7 +608,7 @@ export default function PostList({
                       post.id
                   }
                 >
-                  ▲{' '}
+                  &#9650;{' '}
                   {
                     getUpvoteCount(
                       post
@@ -665,7 +638,7 @@ export default function PostList({
                       post.id
                   }
                 >
-                  ▼{' '}
+                  &#9660;{' '}
                   {
                     getDownvoteCount(
                       post

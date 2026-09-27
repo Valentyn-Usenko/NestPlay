@@ -548,3 +548,33 @@ export function getOnlineFriends() {
     '/api/presence/friends'
   )
 }
+
+
+// ==================================================
+// GAME DISCOVERY
+// ==================================================
+
+export function getDiscoveredGames(
+  search = ''
+) {
+  const params =
+    new URLSearchParams()
+
+  if (search.trim()) {
+    params.set(
+      'q',
+      search.trim()
+    )
+  }
+
+  const query =
+    params.toString()
+
+  return apiFetch(
+    `/api/games/discover${
+      query
+        ? `?${query}`
+        : ''
+    }`
+  )
+}

@@ -133,31 +133,49 @@ export default function ProfilePage({
         // MY PROFILE — AWS
         // ------------------------------------------------
 
-        let myProfile = null
+        const [
+          profileResult,
+          postsResult,
+          friendsResult
+        ] = await Promise.allSettled([
+          getMyProfile(),
+          getPosts(),
+          getFriends()
+        ])
 
-        try {
-          myProfile =
-            await getMyProfile()
-        } catch (error) {
+        const myProfile =
+          profileResult.status === 'fulfilled'
+            ? profileResult.value
+            : null
+
+        const allPosts =
+          postsResult.status === 'fulfilled'
+            ? postsResult.value
+            : []
+
+        const friendRows =
+          friendsResult.status === 'fulfilled'
+            ? friendsResult.value
+            : []
+
+        if (profileResult.status === 'rejected') {
           console.error(
             'Error loading AWS profile:',
-            error
+            profileResult.reason
           )
         }
 
-        // ------------------------------------------------
-        // POSTS + VOTES — AWS
-        // ------------------------------------------------
-
-        let allPosts = []
-
-        try {
-          allPosts =
-            await getPosts()
-        } catch (error) {
+        if (postsResult.status === 'rejected') {
           console.error(
             'Error loading AWS posts:',
-            error
+            postsResult.reason
+          )
+        }
+
+        if (friendsResult.status === 'rejected') {
+          console.error(
+            'Error loading AWS friends:',
+            friendsResult.reason
           )
         }
 
@@ -173,23 +191,6 @@ export default function ProfilePage({
             post =>
               post.myVote === 'up'
           )
-
-        // ------------------------------------------------
-        // FRIENDSHIPS — AWS
-        // ------------------------------------------------
-
-        let friendRows = []
-
-        try {
-          friendRows =
-            await getFriends()
-        } catch (error) {
-          console.error(
-            'Error loading AWS friends:',
-            error
-          )
-        }
-
         const friendIds =
           friendRows.map(
             row =>
@@ -321,7 +322,7 @@ export default function ProfilePage({
       window.requestAnimationFrame(
         () => {
           target.scrollIntoView({
-            behavior: 'smooth',
+            behavior: 'auto',
             block: 'start'
           })
         }
