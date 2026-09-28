@@ -827,6 +827,169 @@ function registerSteamIntegrationRoutes({
 
 
   app.get(
+    '/api/integrations/steam',
+    requireAuth,
+    async (
+      req,
+      res
+    ) => {
+      try {
+        await ensureProfile(
+          req.user
+        )
+
+        const result =
+          await pool.query(
+            `
+            SELECT
+              external_user_id
+                AS "steamId",
+
+              display_name
+                AS "displayName",
+
+              activity_sharing_enabled
+                AS "activitySharingEnabled",
+
+              connected_at
+                AS "connectedAt"
+
+            FROM user_external_accounts
+
+            WHERE
+              user_id = $1
+              AND provider = $2
+
+            LIMIT 1
+            `,
+            [
+              req.user.id,
+              STEAM_PROVIDER
+            ]
+          )
+
+        if (
+          result.rows.length ===
+          0
+        ) {
+          return res.json({
+            connected: false,
+            activitySharingEnabled:
+              false
+          })
+        }
+
+        return res.json({
+          connected: true,
+          ...result.rows[0]
+        })
+      } catch (error) {
+        console.error(
+          'Steam connection status error:',
+          error
+        )
+
+        return res
+          .status(500)
+          .json({
+            error:
+              'Could not load Steam connection'
+          })
+      }
+    }
+  )
+
+
+  app.delete(
+    '/api/integrations/steam',
+    requireAuth,
+    async (
+      req,
+      res
+    ) => {
+      let client = null
+
+      try {
+        await ensureProfile(
+          req.user
+        )
+
+        client =
+          await pool.connect()
+
+        await client.query(
+          'BEGIN'
+        )
+
+        await client.query(
+          `
+          DELETE FROM external_account_link_states
+
+          WHERE
+            user_id = $1
+            AND provider = $2
+          `,
+          [
+            req.user.id,
+            STEAM_PROVIDER
+          ]
+        )
+
+        const result =
+          await client.query(
+            `
+            DELETE FROM user_external_accounts
+
+            WHERE
+              user_id = $1
+              AND provider = $2
+
+            RETURNING id
+            `,
+            [
+              req.user.id,
+              STEAM_PROVIDER
+            ]
+          )
+
+        await client.query(
+          'COMMIT'
+        )
+
+        return res.json({
+          connected: false,
+          disconnected:
+            result.rows.length > 0
+        })
+      } catch (error) {
+        if (client) {
+          try {
+            await client.query(
+              'ROLLBACK'
+            )
+          } catch {
+            // Nothing else to do.
+          }
+        }
+
+        console.error(
+          'Steam disconnect error:',
+          error
+        )
+
+        return res
+          .status(500)
+          .json({
+            error:
+              'Could not disconnect Steam account'
+          })
+      } finally {
+        client?.release()
+      }
+    }
+  )
+
+  app.get(
     '/api/integrations/steam/callback',
     async (
       req,

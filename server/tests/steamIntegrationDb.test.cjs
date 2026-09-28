@@ -70,6 +70,14 @@ test(
       const userId =
         profileResult.rows[0].id
 
+      const accountCountBefore =
+        await pool.query(
+          `
+          SELECT COUNT(*)::int AS count
+          FROM user_external_accounts
+          `
+        )
+
 
       // --------------------------------------------
       // VALID STATE
@@ -259,8 +267,8 @@ test(
 
       assert.equal(
         accountResult.rows[0].count,
-        0,
-        'Database state test must not create Steam connections'
+        accountCountBefore.rows[0].count,
+        'Database state test must not change Steam connections'
       )
     } finally {
       if (

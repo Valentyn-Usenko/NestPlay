@@ -19,7 +19,10 @@ import {
   getMyProfile,
   updateProfile,
   uploadAvatar,
-  deleteAvatar
+  deleteAvatar,
+  getSteamConnection,
+  startSteamLink,
+  disconnectSteam
 } from '../api'
 
 import useEscapeKey from '../hooks/useEscapeKey'
@@ -82,7 +85,7 @@ export default function SettingsModal({
   ] = useState(
     session?.user?.user_metadata?.username ||
     session?.user?.email ||
-    '—'
+    '\u2014'
   )
 
   const [
@@ -155,6 +158,24 @@ export default function SettingsModal({
     setMessage
   ] = useState(null)
 
+  const [
+    steamConnection,
+    setSteamConnection
+  ] = useState({
+    connected: false,
+    activitySharingEnabled: false
+  })
+
+  const [
+    steamLoading,
+    setSteamLoading
+  ] = useState(true)
+
+  const [
+    steamActionLoading,
+    setSteamActionLoading
+  ] = useState(false)
+
   const fileInputRef =
     useRef(null)
 
@@ -163,7 +184,7 @@ export default function SettingsModal({
 
   const currentEmail =
     session?.user?.email ||
-    '—'
+    '\u2014'
 
   const avatarLetter =
     (currentUsername || '?')
@@ -204,7 +225,7 @@ export default function SettingsModal({
             ?.user_metadata
             ?.username ||
           session?.user?.email ||
-          '—'
+          '\u2014'
         )
 
         setAvatarUrl(
@@ -229,7 +250,59 @@ export default function SettingsModal({
       }
     }
 
+    async function fetchSteamConnection() {
+      try {
+        const connection =
+          await getSteamConnection()
+
+        if (
+          !mountedRef.current
+        ) {
+          return
+        }
+
+        setSteamConnection({
+          connected:
+            Boolean(
+              connection?.connected
+            ),
+
+          steamId:
+            connection?.steamId ||
+            null,
+
+          displayName:
+            connection?.displayName ||
+            null,
+
+          activitySharingEnabled:
+            Boolean(
+              connection
+                ?.activitySharingEnabled
+            ),
+
+          connectedAt:
+            connection?.connectedAt ||
+            null
+        })
+      } catch (error) {
+        console.error(
+          'Error loading Steam connection:',
+          error
+        )
+      } finally {
+        if (
+          mountedRef.current
+        ) {
+          setSteamLoading(
+            false
+          )
+        }
+      }
+    }
+
     fetchProfile()
+    fetchSteamConnection()
 
     return () => {
       mountedRef.current =
@@ -752,9 +825,9 @@ export default function SettingsModal({
   // AVATAR UPLOAD
   //
   // Browser
-  // ↓
+  // v
   // Node API
-  // ↓
+  // v
   // Amazon S3
   // ==================================================
 
@@ -1001,7 +1074,7 @@ export default function SettingsModal({
 
 
   // ==================================================
-  // PRIVACY — AWS
+  // PRIVACY - AWS
   // ==================================================
 
   const handlePrivacyToggle =
@@ -1056,6 +1129,161 @@ export default function SettingsModal({
     }
 
 
+  // ==================================================
+  // STEAM CONNECTION
+  // ==================================================
+
+  const handleConnectSteam =
+    async () => {
+      if (
+        steamActionLoading
+      ) {
+        return
+      }
+
+      setSteamActionLoading(
+        true
+      )
+
+      setMessage(
+        null
+      )
+
+      try {
+        const result =
+          await startSteamLink()
+
+        const authorizationUrl =
+          result?.authorizationUrl
+
+        if (
+          typeof authorizationUrl !==
+            'string'
+        ) {
+          throw new Error(
+            'Steam authorization URL was not returned.'
+          )
+        }
+
+        const steamUrl =
+          new URL(
+            authorizationUrl
+          )
+
+        if (
+          steamUrl.protocol !==
+            'https:' ||
+          steamUrl.hostname !==
+            'steamcommunity.com' ||
+          steamUrl.pathname !==
+            '/openid/login'
+        ) {
+          throw new Error(
+            'Steam authorization URL was invalid.'
+          )
+        }
+
+        window.location.assign(
+          steamUrl.toString()
+        )
+      } catch (error) {
+        console.error(
+          'Steam connection error:',
+          error
+        )
+
+        if (
+          mountedRef.current
+        ) {
+          setMessage({
+            text:
+              error.message ||
+              'Could not connect Steam.',
+            type:
+              'error'
+          })
+
+          setSteamActionLoading(
+            false
+          )
+        }
+      }
+    }
+
+
+  const handleDisconnectSteam =
+    async () => {
+      if (
+        steamActionLoading
+      ) {
+        return
+      }
+
+      const confirmed =
+        window.confirm(
+          'Disconnect your Steam account from NestPlay?'
+        )
+
+      if (!confirmed) {
+        return
+      }
+
+      setSteamActionLoading(
+        true
+      )
+
+      setMessage(
+        null
+      )
+
+      try {
+        await disconnectSteam()
+
+        if (
+          !mountedRef.current
+        ) {
+          return
+        }
+
+        setSteamConnection({
+          connected: false,
+          activitySharingEnabled: false
+        })
+
+        setMessage({
+          text:
+            'Steam account disconnected.',
+          type:
+            'success'
+        })
+      } catch (error) {
+        console.error(
+          'Steam disconnect error:',
+          error
+        )
+
+        if (
+          mountedRef.current
+        ) {
+          setMessage({
+            text:
+              error.message ||
+              'Could not disconnect Steam.',
+            type:
+              'error'
+          })
+        }
+      } finally {
+        if (
+          mountedRef.current
+        ) {
+          setSteamActionLoading(
+            false
+          )
+        }
+      }
+    }
+
   const previewGradient =
     avatarUrl
       ? null
@@ -1077,7 +1305,7 @@ export default function SettingsModal({
           className="close-btn"
           onClick={onClose}
         >
-          ×
+          &times;
         </button>
 
         <h2 className="settings-title">
@@ -1160,7 +1388,7 @@ export default function SettingsModal({
                 }
               >
                 {loading
-                  ? 'Saving…'
+                  ? 'Saving\u2026'
                   : 'Save'}
               </button>
 
@@ -1246,7 +1474,7 @@ export default function SettingsModal({
                     }
                   >
                     {loading
-                      ? 'Sending…'
+                      ? 'Sending\u2026'
                       : 'Save'}
                   </button>
                 </>
@@ -1290,7 +1518,7 @@ export default function SettingsModal({
                     }
                   >
                     {loading
-                      ? 'Verifying…'
+                      ? 'Verifying\u2026'
                       : 'Verify Email'}
                   </button>
 
@@ -1330,7 +1558,7 @@ export default function SettingsModal({
               </span>
 
               <span className="settings-current">
-                ••••••••
+                {'\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'}
               </span>
             </div>
 
@@ -1417,7 +1645,7 @@ export default function SettingsModal({
                 }
               >
                 {loading
-                  ? 'Saving…'
+                  ? 'Saving\u2026'
                   : 'Save'}
               </button>
 
@@ -1434,6 +1662,66 @@ export default function SettingsModal({
           )}
         </div>
 
+
+        {/* ========================================== */}
+        {/* CONNECTED ACCOUNTS */}
+        {/* ========================================== */}
+
+        <div className="settings-section">
+          <h3 className="settings-section-heading">
+            Connected Accounts
+          </h3>
+
+          <div className="settings-row">
+            <div className="settings-row-left">
+              <span className="settings-label">
+                Steam
+              </span>
+
+              <span className="settings-current">
+                {steamLoading
+                  ? 'Checking connection...'
+                  : steamConnection.connected
+                    ? 'Connected'
+                    : 'Not connected'}
+              </span>
+            </div>
+
+            {!steamLoading && (
+              <button
+                className="settings-edit-btn"
+                onClick={
+                  steamConnection.connected
+                    ? handleDisconnectSteam
+                    : handleConnectSteam
+                }
+                disabled={
+                  steamActionLoading
+                }
+              >
+                {steamActionLoading
+                  ? 'Please wait...'
+                  : steamConnection.connected
+                    ? 'Disconnect'
+                    : 'Connect'}
+              </button>
+            )}
+          </div>
+
+          <div
+            className="settings-current"
+            style={{
+              marginTop:
+                '0.5rem',
+              lineHeight:
+                '1.5'
+            }}
+          >
+            Connecting Steam lets NestPlay verify
+            your Steam account. Steam activity
+            sharing remains off by default.
+          </div>
+        </div>
 
         {/* ========================================== */}
         {/* PROFILE */}
@@ -1521,8 +1809,8 @@ export default function SettingsModal({
                     }
                   >
                     {uploadingAvatar
-                      ? 'Uploading…'
-                      : '📷 Upload Photo'}
+                      ? 'Uploading\u2026'
+                      : 'Upload Photo'}
                   </button>
 
                   {avatarUrl && (
@@ -1627,8 +1915,8 @@ export default function SettingsModal({
                 }}
               >
                 {isPrivate
-                  ? '🔒 Private — only you can see your posts'
-                  : '🌐 Public — everyone can see your posts'}
+                  ? '\u{1F512} Private \u2014 only you can see your posts'
+                  : '\u{1F310} Public \u2014 everyone can see your posts'}
               </span>
             </div>
 
@@ -1648,7 +1936,7 @@ export default function SettingsModal({
               }
             >
               {privacySaving
-                ? '…'
+                ? '\u2026'
                 : isPrivate
                   ? 'Make Public'
                   : 'Make Private'}

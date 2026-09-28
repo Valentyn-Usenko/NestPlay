@@ -578,3 +578,33 @@ export function getDiscoveredGames(
     }`
   )
 }
+
+// ==================================================
+// STEAM INTEGRATION
+// ==================================================
+
+export function getSteamConnection() {
+  return apiFetch(
+    '/api/integrations/steam'
+  )
+}
+
+
+export function startSteamLink() {
+  return apiFetch(
+    '/api/integrations/steam/link/start',
+    {
+      method: 'POST'
+    }
+  )
+}
+
+
+export function disconnectSteam() {
+  return apiFetch(
+    '/api/integrations/steam',
+    {
+      method: 'DELETE'
+    }
+  )
+}
