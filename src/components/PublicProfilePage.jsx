@@ -5,7 +5,8 @@ import {
   getFriendStatus,
   sendFriendRequest,
   getProfile,
-  getProfiles
+  getProfiles,
+  getUserCurrentSteamGame
 } from '../api'
 
 const AVATAR_COLORS = {
@@ -28,6 +29,11 @@ export default function PublicProfilePage({
   const [posts, setPosts] = useState([])
   const [friends, setFriends] = useState([])
   const [loading, setLoading] = useState(true)
+
+  const [
+    currentSteamGame,
+    setCurrentSteamGame
+  ] = useState(null)
 
   const [isPrivate, setIsPrivate] =
     useState(false)
@@ -65,6 +71,23 @@ export default function PublicProfilePage({
 
         let fetchedPosts = []
         let fetchedFriends = []
+        let fetchedSteamGame = null
+
+        try {
+          const steamActivity =
+            await getUserCurrentSteamGame(
+              userId
+            )
+
+          fetchedSteamGame =
+            steamActivity?.currentGame ||
+            null
+        } catch (error) {
+          console.error(
+            'Error loading shared Steam activity:',
+            error
+          )
+        }
 
         // ------------------------------------------------
         // PUBLIC CONTENT
@@ -182,6 +205,10 @@ export default function PublicProfilePage({
 
         setFriendStatus(
           status
+        )
+
+        setCurrentSteamGame(
+          fetchedSteamGame
         )
       } catch (error) {
         console.error(
@@ -386,6 +413,23 @@ export default function PublicProfilePage({
           <h2 className="profile-username">
             {username}
           </h2>
+
+          {currentSteamGame && (
+            <p
+              className="profile-joined"
+              style={{
+                color:
+                  '#ff9800',
+                marginBottom:
+                  '0.35rem'
+              }}
+            >
+              Currently playing:{' '}
+              <strong>
+                {currentSteamGame.name}
+              </strong>
+            </p>
+          )}
 
           <p className="profile-joined">
             Member since{' '}

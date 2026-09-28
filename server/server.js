@@ -36,7 +36,15 @@ const {
   registerPresenceRoutes
 } = require('./presence')
 
+const {
+  registerSteamIntegrationRoutes
+} = require('./steamIntegration')
+
 const app = express()
+
+app.disable(
+  'x-powered-by'
+)
 
 const PORT =
   process.env.PORT || 3001
@@ -284,6 +292,13 @@ registerPresenceRoutes({
   requireAuth,
   signProfile:
     addSignedAvatarUrl
+})
+
+registerSteamIntegrationRoutes({
+  app,
+  pool,
+  requireAuth,
+  ensureProfile
 })
 
 achievementService
@@ -3962,7 +3977,7 @@ app.patch(
 
 
 // ==================================================
-// AVATAR STORAGE â€” AMAZON S3
+// AVATAR STORAGE — AMAZON S3
 // ==================================================
 
 
@@ -4378,9 +4393,9 @@ app.get(
 // RAWG GAME SEARCH
 //
 // Browser
-// â†“
+// ↓
 // NestPlay backend
-// â†“
+// ↓
 // RAWG
 //
 // RAWG API key stays server-side.
