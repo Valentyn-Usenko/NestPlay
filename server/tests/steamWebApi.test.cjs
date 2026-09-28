@@ -146,7 +146,13 @@ test(
           1,
 
         lastlogoff:
-          1234567890
+          1234567890,
+
+        gameid:
+          '123456',
+
+        gameextrainfo:
+          'Test Game'
       })
 
     assert.deepEqual(
@@ -177,7 +183,15 @@ test(
           1,
 
         lastLogoff:
-          1234567890
+          1234567890,
+
+        currentGame: {
+          appId:
+            '123456',
+
+          name:
+            'Test Game'
+        }
       }
     )
   }

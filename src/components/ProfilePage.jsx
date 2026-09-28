@@ -4,6 +4,7 @@ import {
   getFriends,
   getProfiles,
   getMyProfile,
+  getCurrentSteamGame,
   updateProfile,
   deleteFriendRequest,
   uploadAvatar,
@@ -60,6 +61,11 @@ export default function ProfilePage({
   const [friends, setFriends] = useState([])
   const [loading, setLoading] = useState(true)
   const [profileId, setProfileId] = useState(null)
+
+  const [
+    currentSteamGame,
+    setCurrentSteamGame
+  ] = useState(null)
 
   const [showAllPosts, setShowAllPosts] =
     useState(false)
@@ -136,11 +142,13 @@ export default function ProfilePage({
         const [
           profileResult,
           postsResult,
-          friendsResult
+          friendsResult,
+          steamActivityResult
         ] = await Promise.allSettled([
           getMyProfile(),
           getPosts(),
-          getFriends()
+          getFriends(),
+          getCurrentSteamGame()
         ])
 
         const myProfile =
@@ -157,6 +165,21 @@ export default function ProfilePage({
           friendsResult.status === 'fulfilled'
             ? friendsResult.value
             : []
+
+        const steamActivity =
+          steamActivityResult.status === 'fulfilled'
+            ? steamActivityResult.value
+            : null
+
+        if (
+          steamActivityResult.status ===
+          'rejected'
+        ) {
+          console.error(
+            'Error loading Steam activity:',
+            steamActivityResult.reason
+          )
+        }
 
         if (profileResult.status === 'rejected') {
           console.error(
@@ -275,6 +298,14 @@ export default function ProfilePage({
 
         setFriends(
           friendProfiles
+        )
+
+        setCurrentSteamGame(
+          steamActivity
+            ?.activitySharingEnabled
+            ? steamActivity.currentGame ||
+                null
+            : null
         )
       } catch (error) {
         console.error(
@@ -596,6 +627,23 @@ export default function ProfilePage({
           <h2 className="profile-username">
             {username}
           </h2>
+
+          {currentSteamGame && (
+            <p
+              className="profile-joined"
+              style={{
+                color:
+                  '#ff9800',
+                marginBottom:
+                  '0.35rem'
+              }}
+            >
+              Currently playing:{' '}
+              <strong>
+                {currentSteamGame.name}
+              </strong>
+            </p>
+          )}
 
           <p className="profile-joined">
             Member since{' '}

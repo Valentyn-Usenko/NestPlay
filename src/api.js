@@ -608,3 +608,36 @@ export function disconnectSteam() {
     }
   )
 }
+
+export function updateSteamActivitySharing(
+  enabled
+) {
+  return apiFetch(
+    '/api/integrations/steam/activity-sharing',
+    {
+      method: 'PATCH',
+
+      body: JSON.stringify({
+        enabled
+      })
+    }
+  )
+}
+
+
+export function getCurrentSteamGame() {
+  return apiFetch(
+    '/api/integrations/steam/current-game'
+  )
+}
+
+
+export function getUserCurrentSteamGame(
+  userId
+) {
+  return apiFetch(
+    `/api/users/${encodeURIComponent(
+      userId
+    )}/steam/current-game`
+  )
+}

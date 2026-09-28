@@ -190,6 +190,24 @@ function normalizePlayer(
         player.lastlogoff
       )
         ? player.lastlogoff
+        : null,
+
+    currentGame:
+      typeof player.gameid ===
+        'string' &&
+      /^\d+$/.test(
+        player.gameid
+      ) &&
+      typeof player.gameextrainfo ===
+        'string' &&
+      player.gameextrainfo.trim()
+        ? {
+            appId:
+              player.gameid,
+
+            name:
+              player.gameextrainfo.trim()
+          }
         : null
   }
 }

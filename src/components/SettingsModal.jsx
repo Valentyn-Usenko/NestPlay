@@ -22,7 +22,8 @@ import {
   deleteAvatar,
   getSteamConnection,
   startSteamLink,
-  disconnectSteam
+  disconnectSteam,
+  updateSteamActivitySharing
 } from '../api'
 
 import useEscapeKey from '../hooks/useEscapeKey'
@@ -1284,6 +1285,89 @@ export default function SettingsModal({
       }
     }
 
+  const handleSteamActivitySharingToggle =
+    async () => {
+      if (
+        steamActionLoading ||
+        !steamConnection.connected
+      ) {
+        return
+      }
+
+      const next =
+        !steamConnection
+          .activitySharingEnabled
+
+      setSteamActionLoading(
+        true
+      )
+
+      setMessage(
+        null
+      )
+
+      try {
+        const result =
+          await updateSteamActivitySharing(
+            next
+          )
+
+        if (
+          !mountedRef.current
+        ) {
+          return
+        }
+
+        setSteamConnection(
+          previous => ({
+            ...previous,
+
+            activitySharingEnabled:
+              Boolean(
+                result
+                  ?.activitySharingEnabled
+              )
+          })
+        )
+
+        setMessage({
+          text:
+            next
+              ? 'Steam activity sharing enabled.'
+              : 'Steam activity sharing disabled.',
+
+          type:
+            'success'
+        })
+      } catch (error) {
+        console.error(
+          'Steam activity sharing error:',
+          error
+        )
+
+        if (
+          mountedRef.current
+        ) {
+          setMessage({
+            text:
+              error.message ||
+              'Could not update Steam activity sharing.',
+
+            type:
+              'error'
+          })
+        }
+      } finally {
+        if (
+          mountedRef.current
+        ) {
+          setSteamActionLoading(
+            false
+          )
+        }
+      }
+    }
+
   const previewGradient =
     avatarUrl
       ? null
@@ -1707,6 +1791,45 @@ export default function SettingsModal({
               </button>
             )}
           </div>
+
+          {steamConnection.connected && (
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-label">
+                  Share current Steam activity
+                </span>
+
+                <span className="settings-current">
+                  {steamConnection.activitySharingEnabled
+                    ? 'NestPlay can show the game you are currently playing'
+                    : 'Current Steam activity is not shared'}
+                </span>
+              </div>
+
+              <button
+                className={
+                  `settings-toggle-btn ${
+                    steamConnection.activitySharingEnabled
+                      ? 'toggled'
+                      : ''
+                  }`
+                }
+                onClick={
+                  handleSteamActivitySharingToggle
+                }
+                disabled={
+                  steamActionLoading
+                }
+              >
+                {steamActionLoading
+                  ? '\u2026'
+                  : steamConnection.activitySharingEnabled
+                    ? 'On'
+                    : 'Off'}
+              </button>
+            </div>
+          )}
+
 
           <div
             className="settings-current"

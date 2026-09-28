@@ -5,6 +5,10 @@ const {
   randomBytes
 } = require('crypto')
 
+const {
+  getCurrentSteamGame
+} = require('./steamActivity')
+
 
 const STEAM_PROVIDER =
   'steam'
@@ -899,6 +903,213 @@ function registerSteamIntegrationRoutes({
     }
   )
 
+
+  app.get(
+    '/api/integrations/steam/current-game',
+    requireAuth,
+    async (
+      req,
+      res
+    ) => {
+      try {
+        await ensureProfile(
+          req.user
+        )
+
+        const result =
+          await getCurrentSteamGame(
+            pool,
+            req.user.id
+          )
+
+        return res.json(
+          result
+        )
+      } catch (error) {
+        console.error(
+          'Steam current-game error:',
+          error
+        )
+
+        return res
+          .status(
+            error.statusCode ||
+            500
+          )
+          .json({
+            error:
+              'Could not load Steam current game'
+          })
+      }
+    }
+  )
+
+  app.get(
+    '/api/users/:userId/steam/current-game',
+    requireAuth,
+    async (
+      req,
+      res
+    ) => {
+      try {
+        const targetUserId =
+          String(
+            req.params.userId ||
+            ''
+          ).trim()
+
+        if (
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+            targetUserId
+          )
+        ) {
+          return res
+            .status(400)
+            .json({
+              error:
+                'Invalid user ID'
+            })
+        }
+
+        const profileResult =
+          await pool.query(
+            `
+            SELECT is_private
+            FROM profiles
+            WHERE id = $1
+            LIMIT 1
+            `,
+            [
+              targetUserId
+            ]
+          )
+
+        if (
+          profileResult.rows.length === 0 ||
+          profileResult.rows[0]
+            .is_private
+        ) {
+          return res.json({
+            currentGame: null
+          })
+        }
+
+        const result =
+          await getCurrentSteamGame(
+            pool,
+            targetUserId
+          )
+
+        return res.json({
+          currentGame:
+            result
+              .activitySharingEnabled
+              ? result.currentGame
+              : null
+        })
+      } catch (error) {
+        console.error(
+          'Public Steam current-game error:',
+          error
+        )
+
+        return res
+          .status(
+            error.statusCode ||
+            500
+          )
+          .json({
+            error:
+              'Could not load Steam current game'
+          })
+      }
+    }
+  )
+
+  app.patch(
+    '/api/integrations/steam/activity-sharing',
+    requireAuth,
+    async (
+      req,
+      res
+    ) => {
+      try {
+        await ensureProfile(
+          req.user
+        )
+
+        const enabled =
+          req.body?.enabled
+
+        if (
+          typeof enabled !==
+          'boolean'
+        ) {
+          return res
+            .status(400)
+            .json({
+              error:
+                'enabled must be a boolean'
+            })
+        }
+
+        const result =
+          await pool.query(
+            `
+            UPDATE user_external_accounts
+
+            SET
+              activity_sharing_enabled = $1,
+              updated_at = NOW()
+
+            WHERE
+              user_id = $2
+              AND provider = $3
+
+            RETURNING
+              activity_sharing_enabled
+                AS "activitySharingEnabled"
+            `,
+            [
+              enabled,
+              req.user.id,
+              STEAM_PROVIDER
+            ]
+          )
+
+        if (
+          result.rows.length ===
+          0
+        ) {
+          return res
+            .status(404)
+            .json({
+              error:
+                'Steam account is not connected'
+            })
+        }
+
+        return res.json({
+          connected: true,
+          activitySharingEnabled:
+            result.rows[0]
+              .activitySharingEnabled
+        })
+      } catch (error) {
+        console.error(
+          'Steam activity sharing update error:',
+          error
+        )
+
+        return res
+          .status(500)
+          .json({
+            error:
+              'Could not update Steam activity sharing'
+          })
+      }
+    }
+  )
 
   app.delete(
     '/api/integrations/steam',
