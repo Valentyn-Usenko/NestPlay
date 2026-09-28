@@ -25,6 +25,9 @@ const OPENID_IDENTIFIER_SELECT =
 const LINK_STATE_LIFETIME_MINUTES =
   10
 
+const LINK_START_MIN_INTERVAL_SECONDS =
+  5
+
 
 function hashLinkState(
   state
@@ -499,6 +502,54 @@ async function createSteamLink(
 
     await client.query(
       `
+      SELECT id
+      FROM profiles
+      WHERE id = $1
+      FOR UPDATE
+      `,
+      [
+        userId
+      ]
+    )
+
+    const recentState =
+      await client.query(
+        `
+        SELECT 1
+        FROM external_account_link_states
+
+        WHERE
+          user_id = $1
+          AND provider = $2
+          AND created_at >
+            NOW() -
+            ($3 * INTERVAL '1 second')
+
+        LIMIT 1
+        `,
+        [
+          userId,
+          STEAM_PROVIDER,
+          LINK_START_MIN_INTERVAL_SECONDS
+        ]
+      )
+
+    if (
+      recentState.rows.length >
+      0
+    ) {
+      const error =
+        new Error(
+          'Please wait a few seconds before trying to connect Steam again'
+        )
+
+      error.statusCode = 429
+
+      throw error
+    }
+
+    await client.query(
+      `
       DELETE FROM external_account_link_states
       WHERE
         expires_at <= NOW()
@@ -565,6 +616,51 @@ async function createSteamLink(
       buildSteamLoginUrl(
         rawState
       )
+  }
+}
+
+
+async function assertSteamLinkStateActive(
+  pool,
+  rawState
+) {
+  const stateHash =
+    hashLinkState(
+      rawState
+    )
+
+  const result =
+    await pool.query(
+      `
+      SELECT 1
+      FROM external_account_link_states
+
+      WHERE
+        state_hash = $1
+        AND provider = $2
+        AND used_at IS NULL
+        AND expires_at > NOW()
+
+      LIMIT 1
+      `,
+      [
+        stateHash,
+        STEAM_PROVIDER
+      ]
+    )
+
+  if (
+    result.rows.length !==
+    1
+  ) {
+    const error =
+      new Error(
+        'Steam linking request is invalid, expired, or already used'
+      )
+
+    error.statusCode = 400
+
+    throw error
   }
 }
 
@@ -788,6 +884,38 @@ function registerSteamIntegrationRoutes({
   requireAuth,
   ensureProfile
 }) {
+  function steamPrivacyHeaders(
+    req,
+    res,
+    next
+  ) {
+    res.set(
+      'Cache-Control',
+      'private, no-store'
+    )
+
+    res.set(
+      'Pragma',
+      'no-cache'
+    )
+
+    res.set(
+      'Referrer-Policy',
+      'no-referrer'
+    )
+
+    next()
+  }
+
+  app.use(
+    '/api/integrations/steam',
+    steamPrivacyHeaders
+  )
+
+  app.use(
+    '/api/users/:userId/steam/current-game',
+    steamPrivacyHeaders
+  )
   app.post(
     '/api/integrations/steam/link/start',
     requireAuth,
@@ -1225,6 +1353,11 @@ function registerSteamIntegrationRoutes({
             req.query,
             state
           )
+
+        await assertSteamLinkStateActive(
+          pool,
+          state
+        )
 
         const isValid =
           await verifyWithSteam(
