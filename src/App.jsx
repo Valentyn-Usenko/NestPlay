@@ -102,6 +102,53 @@ export default function App() {
     setShowSettings
   ] = useState(false)
 
+
+  // ==================================================
+  // STEAM RETURN
+  //
+  // After Steam OpenID succeeds, the backend returns
+  // the browser to NestPlay with ?steam=connected.
+  // Open Settings automatically and clean the URL.
+  // ==================================================
+
+  useEffect(() => {
+    const params =
+      new URLSearchParams(
+        window.location.search
+      )
+
+    if (
+      params.get('steam') !==
+      'connected'
+    ) {
+      return
+    }
+
+    setShowSettings(
+      true
+    )
+
+    params.delete(
+      'steam'
+    )
+
+    const remainingQuery =
+      params.toString()
+
+    const cleanUrl =
+      `${window.location.pathname}${
+        remainingQuery
+          ? `?${remainingQuery}`
+          : ''
+      }${window.location.hash}`
+
+    window.history.replaceState(
+      {},
+      '',
+      cleanUrl
+    )
+  }, [])
+
   const [
     showInbox,
     setShowInbox

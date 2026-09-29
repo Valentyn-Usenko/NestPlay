@@ -177,6 +177,11 @@ export default function SettingsModal({
     setSteamActionLoading
   ] = useState(false)
 
+  const [
+    steamManageOpen,
+    setSteamManageOpen
+  ] = useState(false)
+
   const fileInputRef =
     useRef(null)
 
@@ -1220,14 +1225,6 @@ export default function SettingsModal({
         return
       }
 
-      const confirmed =
-        window.confirm(
-          'Disconnect your Steam account from NestPlay?'
-        )
-
-      if (!confirmed) {
-        return
-      }
 
       setSteamActionLoading(
         true
@@ -1250,6 +1247,10 @@ export default function SettingsModal({
           connected: false,
           activitySharingEnabled: false
         })
+
+        setSteamManageOpen(
+          false
+        )
 
         setMessage({
           text:
@@ -1756,7 +1757,7 @@ export default function SettingsModal({
             Connected Accounts
           </h3>
 
-          <div className="settings-row">
+          <div className="settings-row steam-account-row">
             <div className="settings-row-left">
               <span className="settings-label">
                 Steam
@@ -1773,24 +1774,125 @@ export default function SettingsModal({
 
             {!steamLoading && (
               <button
-                className="settings-edit-btn"
+                type="button"
+                className={
+                  `steam-integration-btn ${
+                    steamConnection.connected
+                      ? 'connected'
+                      : ''
+                  }`
+                }
                 onClick={
                   steamConnection.connected
-                    ? handleDisconnectSteam
+                    ? () => {
+                        setSteamManageOpen(
+                          previous =>
+                            !previous
+                        )
+
+                        setMessage(
+                          null
+                        )
+                      }
                     : handleConnectSteam
                 }
                 disabled={
                   steamActionLoading
                 }
+                aria-label={
+                  steamConnection.connected
+                    ? 'Manage Steam connection'
+                    : 'Connect Steam'
+                }
+                aria-expanded={
+                  steamConnection.connected
+                    ? steamManageOpen
+                    : undefined
+                }
+                aria-controls={
+                  steamConnection.connected
+                    ? 'steam-connection-management'
+                    : undefined
+                }
+                data-tooltip={
+                  steamConnection.connected
+                    ? 'Manage Steam connection'
+                    : 'Connect Steam'
+                }
               >
-                {steamActionLoading
-                  ? 'Please wait...'
-                  : steamConnection.connected
-                    ? 'Disconnect'
-                    : 'Connect'}
+                <img
+                  src="/steam.svg"
+                  alt=""
+                  aria-hidden="true"
+                  className="steam-integration-icon"
+                />
+
+                {steamConnection.connected && (
+                  <span
+                    className="steam-connected-dot"
+                    aria-hidden="true"
+                  />
+                )}
               </button>
             )}
           </div>
+
+          {steamManageOpen &&
+            steamConnection.connected && (
+            <div
+              id="steam-connection-management"
+              className="steam-manage-panel"
+              role="region"
+              aria-labelledby="steam-manage-title"
+            >
+              <div className="steam-manage-copy">
+                <span
+                  id="steam-manage-title"
+                  className="settings-label"
+                >
+                  Manage Steam connection
+                </span>
+
+                <span className="settings-current">
+                  Disconnecting removes your linked
+                  Steam account and turns off Steam
+                  activity sharing.
+                </span>
+              </div>
+
+              <div className="steam-manage-actions">
+                <button
+                  type="button"
+                  className="steam-manage-cancel"
+                  onClick={() =>
+                    setSteamManageOpen(
+                      false
+                    )
+                  }
+                  disabled={
+                    steamActionLoading
+                  }
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  className="steam-manage-disconnect"
+                  onClick={
+                    handleDisconnectSteam
+                  }
+                  disabled={
+                    steamActionLoading
+                  }
+                >
+                  {steamActionLoading
+                    ? 'Disconnecting...'
+                    : 'Disconnect'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {steamConnection.connected && (
             <div className="settings-row">

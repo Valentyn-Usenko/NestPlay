@@ -1378,11 +1378,37 @@ function registerSteamIntegrationRoutes({
           steamId
         )
 
-        return res
-          .status(200)
-          .send(
-            'Steam account connected successfully. You can return to NestPlay.'
+        const frontendUrl =
+          String(
+            process.env.FRONTEND_URL ||
+            ''
+          ).trim()
+
+        if (!frontendUrl) {
+          const error =
+            new Error(
+              'FRONTEND_URL is not configured'
+            )
+
+          error.statusCode = 500
+
+          throw error
+        }
+
+        const returnUrl =
+          new URL(
+            frontendUrl
           )
+
+        returnUrl.searchParams.set(
+          'steam',
+          'connected'
+        )
+
+        return res.redirect(
+          303,
+          returnUrl.toString()
+        )
       } catch (error) {
         console.error(
           'Steam callback error:',
