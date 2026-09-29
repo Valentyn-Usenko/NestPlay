@@ -641,3 +641,44 @@ export function getUserCurrentSteamGame(
     )}/steam/current-game`
   )
 }
+
+
+export function getSteamLibrary() {
+  return apiFetch(
+    '/api/integrations/steam/library'
+  )
+}
+
+
+export function getSteamFavoriteGames() {
+  return apiFetch(
+    '/api/integrations/steam/favorite-games'
+  )
+}
+
+
+export function saveSteamFavoriteGames(
+  appIds
+) {
+  return apiFetch(
+    '/api/integrations/steam/favorite-games',
+    {
+      method: 'PUT',
+
+      body: JSON.stringify({
+        appIds
+      })
+    }
+  )
+}
+
+
+export function getUserSteamFavoriteGames(
+  userId
+) {
+  return apiFetch(
+    `/api/users/${encodeURIComponent(
+      userId
+    )}/steam/favorite-games`
+  )
+}

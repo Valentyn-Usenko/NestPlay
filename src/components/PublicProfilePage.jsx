@@ -6,7 +6,8 @@ import {
   sendFriendRequest,
   getProfile,
   getProfiles,
-  getUserCurrentSteamGame
+  getUserCurrentSteamGame,
+  getUserSteamFavoriteGames
 } from '../api'
 
 const AVATAR_COLORS = {
@@ -34,6 +35,11 @@ export default function PublicProfilePage({
     currentSteamGame,
     setCurrentSteamGame
   ] = useState(null)
+
+  const [
+    steamFavoriteGames,
+    setSteamFavoriteGames
+  ] = useState([])
 
   const [isPrivate, setIsPrivate] =
     useState(false)
@@ -72,6 +78,7 @@ export default function PublicProfilePage({
         let fetchedPosts = []
         let fetchedFriends = []
         let fetchedSteamGame = null
+        let fetchedSteamFavorites = []
 
         try {
           const steamActivity =
@@ -85,6 +92,25 @@ export default function PublicProfilePage({
         } catch (error) {
           console.error(
             'Error loading shared Steam activity:',
+            error
+          )
+        }
+
+        try {
+          const steamFavorites =
+            await getUserSteamFavoriteGames(
+              userId
+            )
+
+          fetchedSteamFavorites =
+            Array.isArray(
+              steamFavorites?.games
+            )
+              ? steamFavorites.games
+              : []
+        } catch (error) {
+          console.error(
+            'Error loading shared Steam favorites:',
             error
           )
         }
@@ -209,6 +235,10 @@ export default function PublicProfilePage({
 
         setCurrentSteamGame(
           fetchedSteamGame
+        )
+
+        setSteamFavoriteGames(
+          fetchedSteamFavorites
         )
       } catch (error) {
         console.error(
@@ -507,6 +537,77 @@ export default function PublicProfilePage({
               </span>
             </div>
           </div>
+
+          {steamFavoriteGames.length > 0 && (
+            <div className="profile-steam-favorites">
+              <div className="profile-steam-favorites-heading">
+                <div>
+                  <h3>
+                    Favorite Games
+                  </h3>
+
+                  <span>
+                    From Steam
+                  </span>
+                </div>
+
+                <img
+                  src="/steam.svg"
+                  alt=""
+                  aria-hidden="true"
+                  className="profile-steam-logo"
+                />
+              </div>
+
+              <div className="profile-steam-games-grid">
+                {steamFavoriteGames.map(
+                  game => (
+                    <div
+                      key={game.appId}
+                      className="profile-steam-game-card"
+                    >
+                      {game.iconUrl ? (
+                        <img
+                          src={game.iconUrl}
+                          alt=""
+                          aria-hidden="true"
+                          className="profile-steam-game-icon"
+                        />
+                      ) : (
+                        <div
+                          className="profile-steam-game-icon profile-steam-game-icon-fallback"
+                          aria-hidden="true"
+                        >
+                          🎮
+                        </div>
+                      )}
+
+                      <div className="profile-steam-game-info">
+                        <span className="profile-steam-game-name">
+                          {game.name ||
+                            `Steam App ${game.appId}`}
+                        </span>
+
+                        <span className="profile-steam-game-hours">
+                          {Number(
+                            game.playtimeHours ||
+                              0
+                          ).toLocaleString(
+                            undefined,
+                            {
+                              maximumFractionDigits:
+                                1
+                            }
+                          )}{' '}
+                          hours played
+                        </span>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="profile-posts-section">
             <h3 className="profile-posts-heading">

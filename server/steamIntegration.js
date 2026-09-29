@@ -9,6 +9,12 @@ const {
   getCurrentSteamGame
 } = require('./steamActivity')
 
+const {
+  getSteamFavoriteGames,
+  getSteamLibraryForFavorites,
+  saveSteamFavoriteGames
+} = require('./steamFavorites')
+
 
 const STEAM_PROVIDER =
   'steam'
@@ -916,6 +922,11 @@ function registerSteamIntegrationRoutes({
     '/api/users/:userId/steam/current-game',
     steamPrivacyHeaders
   )
+
+  app.use(
+    '/api/users/:userId/steam/favorite-games',
+    steamPrivacyHeaders
+  )
   app.post(
     '/api/integrations/steam/link/start',
     requireAuth,
@@ -1149,6 +1160,221 @@ function registerSteamIntegrationRoutes({
           .json({
             error:
               'Could not load Steam current game'
+          })
+      }
+    }
+  )
+
+  app.get(
+    '/api/integrations/steam/library',
+    requireAuth,
+    async (
+      req,
+      res
+    ) => {
+      try {
+        await ensureProfile(
+          req.user
+        )
+
+        const result =
+          await getSteamLibraryForFavorites(
+            pool,
+            req.user.id
+          )
+
+        return res.json(
+          result
+        )
+      } catch (error) {
+        console.error(
+          'Steam library error:',
+          error
+        )
+
+        const statusCode =
+          error.statusCode ||
+          500
+
+        return res
+          .status(
+            statusCode
+          )
+          .json({
+            error:
+              statusCode < 500
+                ? error.message
+                : 'Could not load Steam library'
+          })
+      }
+    }
+  )
+
+
+  app.get(
+    '/api/integrations/steam/favorite-games',
+    requireAuth,
+    async (
+      req,
+      res
+    ) => {
+      try {
+        await ensureProfile(
+          req.user
+        )
+
+        const result =
+          await getSteamFavoriteGames(
+            pool,
+            req.user.id
+          )
+
+        return res.json(
+          result
+        )
+      } catch (error) {
+        console.error(
+          'Steam favorite-games load error:',
+          error
+        )
+
+        return res
+          .status(
+            error.statusCode ||
+            500
+          )
+          .json({
+            error:
+              'Could not load Steam favorite games'
+          })
+      }
+    }
+  )
+
+  app.put(
+    '/api/integrations/steam/favorite-games',
+    requireAuth,
+    async (
+      req,
+      res
+    ) => {
+      try {
+        await ensureProfile(
+          req.user
+        )
+
+        const result =
+          await saveSteamFavoriteGames(
+            pool,
+            req.user.id,
+            req.body?.appIds
+          )
+
+        return res.json(
+          result
+        )
+      } catch (error) {
+        console.error(
+          'Steam favorite-games save error:',
+          error
+        )
+
+        const statusCode =
+          error.statusCode ||
+          500
+
+        return res
+          .status(
+            statusCode
+          )
+          .json({
+            error:
+              statusCode < 500
+                ? error.message
+                : 'Could not save Steam favorite games'
+          })
+      }
+    }
+  )
+
+
+  app.get(
+    '/api/users/:userId/steam/favorite-games',
+    requireAuth,
+    async (
+      req,
+      res
+    ) => {
+      try {
+        const targetUserId =
+          String(
+            req.params.userId ||
+            ''
+          ).trim()
+
+        if (
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+            targetUserId
+          )
+        ) {
+          return res
+            .status(400)
+            .json({
+              error:
+                'Invalid user ID'
+            })
+        }
+
+        const profileResult =
+          await pool.query(
+            `
+            SELECT is_private
+            FROM profiles
+            WHERE id = $1
+            LIMIT 1
+            `,
+            [
+              targetUserId
+            ]
+          )
+
+        if (
+          profileResult.rows.length ===
+            0 ||
+          profileResult.rows[0]
+            .is_private
+        ) {
+          return res.json({
+            games: []
+          })
+        }
+
+        const result =
+          await getSteamFavoriteGames(
+            pool,
+            targetUserId
+          )
+
+        return res.json({
+          games:
+            result.visible
+              ? result.games
+              : []
+        })
+      } catch (error) {
+        console.error(
+          'Public Steam favorite-games error:',
+          error
+        )
+
+        return res
+          .status(
+            error.statusCode ||
+            500
+          )
+          .json({
+            error:
+              'Could not load Steam favorite games'
           })
       }
     }

@@ -23,7 +23,9 @@ import {
   getSteamConnection,
   startSteamLink,
   disconnectSteam,
-  updateSteamActivitySharing
+  updateSteamActivitySharing,
+  getSteamLibrary,
+  saveSteamFavoriteGames
 } from '../api'
 
 import useEscapeKey from '../hooks/useEscapeKey'
@@ -182,6 +184,41 @@ export default function SettingsModal({
     setSteamManageOpen
   ] = useState(false)
 
+  const [
+    steamLibrary,
+    setSteamLibrary
+  ] = useState([])
+
+  const [
+    steamLibraryVisible,
+    setSteamLibraryVisible
+  ] = useState(true)
+
+  const [
+    steamFavoriteAppIds,
+    setSteamFavoriteAppIds
+  ] = useState([])
+
+  const [
+    steamLibraryLoading,
+    setSteamLibraryLoading
+  ] = useState(false)
+
+  const [
+    steamFavoritesSaving,
+    setSteamFavoritesSaving
+  ] = useState(false)
+
+  const [
+    steamLibraryError,
+    setSteamLibraryError
+  ] = useState(null)
+
+  const [
+    steamLibrarySearch,
+    setSteamLibrarySearch
+  ] = useState('')
+
   const fileInputRef =
     useRef(null)
 
@@ -315,6 +352,99 @@ export default function SettingsModal({
         false
     }
   }, [session])
+
+
+  useEffect(() => {
+    if (
+      !steamConnection.connected
+    ) {
+      setSteamLibrary([])
+      setSteamFavoriteAppIds([])
+      setSteamLibraryVisible(true)
+      setSteamLibraryError(null)
+      setSteamLibrarySearch('')
+
+      return
+    }
+
+    let cancelled =
+      false
+
+    async function loadSteamLibrary() {
+      setSteamLibraryLoading(
+        true
+      )
+
+      setSteamLibraryError(
+        null
+      )
+
+      try {
+        const result =
+          await getSteamLibrary()
+
+        if (cancelled) {
+          return
+        }
+
+        setSteamLibrary(
+          Array.isArray(
+            result?.games
+          )
+            ? result.games
+            : []
+        )
+
+        setSteamFavoriteAppIds(
+          Array.isArray(
+            result?.selectedAppIds
+          )
+            ? result.selectedAppIds.map(
+                appId =>
+                  String(
+                    appId
+                  )
+              )
+            : []
+        )
+
+        setSteamLibraryVisible(
+          result?.visible !==
+            false
+        )
+      } catch (error) {
+        console.error(
+          'Error loading Steam library:',
+          error
+        )
+
+        if (!cancelled) {
+          setSteamLibrary([])
+          setSteamFavoriteAppIds([])
+
+          setSteamLibraryError(
+            error.message ||
+              'Could not load Steam library.'
+          )
+        }
+      } finally {
+        if (!cancelled) {
+          setSteamLibraryLoading(
+            false
+          )
+        }
+      }
+    }
+
+    loadSteamLibrary()
+
+    return () => {
+      cancelled =
+        true
+    }
+  }, [
+    steamConnection.connected
+  ])
 
 
   // ==================================================
@@ -1252,6 +1382,26 @@ export default function SettingsModal({
           false
         )
 
+        setSteamLibrary(
+          []
+        )
+
+        setSteamFavoriteAppIds(
+          []
+        )
+
+        setSteamLibraryVisible(
+          true
+        )
+
+        setSteamLibraryError(
+          null
+        )
+
+        setSteamLibrarySearch(
+          ''
+        )
+
         setMessage({
           text:
             'Steam account disconnected.',
@@ -1285,6 +1435,260 @@ export default function SettingsModal({
         }
       }
     }
+
+  const handleRefreshSteamLibrary =
+    async () => {
+      if (
+        steamLibraryLoading ||
+        !steamConnection.connected
+      ) {
+        return
+      }
+
+      setSteamLibraryLoading(
+        true
+      )
+
+      setSteamLibraryError(
+        null
+      )
+
+      try {
+        const result =
+          await getSteamLibrary()
+
+        if (
+          !mountedRef.current
+        ) {
+          return
+        }
+
+        setSteamLibrary(
+          Array.isArray(
+            result?.games
+          )
+            ? result.games
+            : []
+        )
+
+        setSteamFavoriteAppIds(
+          Array.isArray(
+            result?.selectedAppIds
+          )
+            ? result.selectedAppIds.map(
+                appId =>
+                  String(
+                    appId
+                  )
+              )
+            : []
+        )
+
+        setSteamLibraryVisible(
+          result?.visible !==
+            false
+        )
+      } catch (error) {
+        console.error(
+          'Steam library refresh error:',
+          error
+        )
+
+        if (
+          mountedRef.current
+        ) {
+          setSteamLibraryError(
+            error.message ||
+              'Could not refresh Steam library.'
+          )
+        }
+      } finally {
+        if (
+          mountedRef.current
+        ) {
+          setSteamLibraryLoading(
+            false
+          )
+        }
+      }
+    }
+
+
+  const handleToggleSteamFavorite =
+    appId => {
+      const normalizedAppId =
+        String(
+          appId
+        )
+
+      setSteamLibraryError(
+        null
+      )
+
+      setSteamFavoriteAppIds(
+        previous => {
+          if (
+            previous.includes(
+              normalizedAppId
+            )
+          ) {
+            return previous.filter(
+              id =>
+                id !==
+                normalizedAppId
+            )
+          }
+
+          if (
+            previous.length >=
+            6
+          ) {
+            setSteamLibraryError(
+              'You can display up to 6 favorite Steam games.'
+            )
+
+            return previous
+          }
+
+          return [
+            ...previous,
+            normalizedAppId
+          ]
+        }
+      )
+    }
+
+
+  const handleMoveSteamFavorite =
+    (
+      appId,
+      direction
+    ) => {
+      const normalizedAppId =
+        String(
+          appId
+        )
+
+      setSteamFavoriteAppIds(
+        previous => {
+          const currentIndex =
+            previous.indexOf(
+              normalizedAppId
+            )
+
+          if (
+            currentIndex ===
+            -1
+          ) {
+            return previous
+          }
+
+          const nextIndex =
+            currentIndex +
+            direction
+
+          if (
+            nextIndex < 0 ||
+            nextIndex >=
+              previous.length
+          ) {
+            return previous
+          }
+
+          const next =
+            [...previous]
+
+          const temporary =
+            next[currentIndex]
+
+          next[currentIndex] =
+            next[nextIndex]
+
+          next[nextIndex] =
+            temporary
+
+          return next
+        }
+      )
+    }
+
+
+  const handleSaveSteamFavorites =
+    async () => {
+      if (
+        steamFavoritesSaving ||
+        !steamConnection.connected
+      ) {
+        return
+      }
+
+      setSteamFavoritesSaving(
+        true
+      )
+
+      setSteamLibraryError(
+        null
+      )
+
+      try {
+        const result =
+          await saveSteamFavoriteGames(
+            steamFavoriteAppIds
+          )
+
+        if (
+          !mountedRef.current
+        ) {
+          return
+        }
+
+        const savedGames =
+          Array.isArray(
+            result?.games
+          )
+            ? result.games
+            : []
+
+        setSteamFavoriteAppIds(
+          savedGames.map(
+            game =>
+              String(
+                game.appId
+              )
+          )
+        )
+
+        setMessage({
+          text:
+            'Favorite Steam games saved.',
+          type:
+            'success'
+        })
+      } catch (error) {
+        console.error(
+          'Steam favorite-games save error:',
+          error
+        )
+
+        if (
+          mountedRef.current
+        ) {
+          setSteamLibraryError(
+            error.message ||
+              'Could not save favorite Steam games.'
+          )
+        }
+      } finally {
+        if (
+          mountedRef.current
+        ) {
+          setSteamFavoritesSaving(
+            false
+          )
+        }
+      }
+    }
+
 
   const handleSteamActivitySharingToggle =
     async () => {
@@ -1929,6 +2333,394 @@ export default function SettingsModal({
                     ? 'On'
                     : 'Off'}
               </button>
+            </div>
+          )}
+
+
+          {steamConnection.connected && (
+            <div className="steam-favorites-panel">
+              <div className="steam-favorites-header">
+                <div>
+                  <div className="steam-favorites-title">
+                    Favorite Steam Games
+                  </div>
+
+                  <div className="steam-favorites-subtitle">
+                    Pick up to 6 games from your Steam
+                    library to show on your profile.
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="steam-library-refresh-btn"
+                  onClick={
+                    handleRefreshSteamLibrary
+                  }
+                  disabled={
+                    steamLibraryLoading ||
+                    steamFavoritesSaving
+                  }
+                >
+                  {steamLibraryLoading
+                    ? 'Refreshing...'
+                    : 'Refresh library'}
+                </button>
+              </div>
+
+              {steamLibraryError && (
+                <div className="steam-library-error">
+                  {steamLibraryError}
+                </div>
+              )}
+
+              {!steamLibraryLoading &&
+                steamLibraryVisible === false && (
+                <div className="steam-library-private">
+                  <strong>
+                    Steam library unavailable
+                  </strong>
+
+                  <span>
+                    Your Steam game details may be
+                    private. Make your Steam game
+                    details public, then refresh the
+                    library.
+                  </span>
+                </div>
+              )}
+
+              {steamLibraryVisible !== false && (
+                <>
+                  <div className="steam-selected-header">
+                    <span>
+                      Selected favorites
+                    </span>
+
+                    <span>
+                      {steamFavoriteAppIds.length}/6
+                    </span>
+                  </div>
+
+                  {steamFavoriteAppIds.length ===
+                    0 && (
+                    <div className="steam-favorites-empty">
+                      No favorite Steam games selected
+                      yet.
+                    </div>
+                  )}
+
+                  {steamFavoriteAppIds.length >
+                    0 && (
+                    <div className="steam-selected-list">
+                      {steamFavoriteAppIds.map(
+                        (
+                          appId,
+                          index
+                        ) => {
+                          const game =
+                            steamLibrary.find(
+                              candidate =>
+                                String(
+                                  candidate.appId
+                                ) ===
+                                String(
+                                  appId
+                                )
+                            )
+
+                          if (!game) {
+                            return null
+                          }
+
+                          return (
+                            <div
+                              key={
+                                game.appId
+                              }
+                              className="steam-selected-game"
+                            >
+                              <div className="steam-game-identity">
+                                {game.iconUrl ? (
+                                  <img
+                                    src={
+                                      game.iconUrl
+                                    }
+                                    alt=""
+                                    aria-hidden="true"
+                                    className="steam-game-icon"
+                                  />
+                                ) : (
+                                  <div
+                                    className="steam-game-icon steam-game-icon-fallback"
+                                    aria-hidden="true"
+                                  >
+                                    🎮
+                                  </div>
+                                )}
+
+                                <div className="steam-game-copy">
+                                  <span className="steam-game-name">
+                                    {game.name ||
+                                      `Steam App ${game.appId}`}
+                                  </span>
+
+                                  <span className="steam-game-hours">
+                                    {Number(
+                                      game.playtimeHours ||
+                                        0
+                                    ).toLocaleString(
+                                      undefined,
+                                      {
+                                        maximumFractionDigits:
+                                          1
+                                      }
+                                    )}{' '}
+                                    hrs played
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="steam-selected-actions">
+                                <button
+                                  type="button"
+                                  className="steam-order-btn"
+                                  onClick={() =>
+                                    handleMoveSteamFavorite(
+                                      game.appId,
+                                      -1
+                                    )
+                                  }
+                                  disabled={
+                                    index ===
+                                      0 ||
+                                    steamFavoritesSaving
+                                  }
+                                  aria-label={
+                                    `Move ${game.name || 'game'} up`
+                                  }
+                                >
+                                  ↑
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="steam-order-btn"
+                                  onClick={() =>
+                                    handleMoveSteamFavorite(
+                                      game.appId,
+                                      1
+                                    )
+                                  }
+                                  disabled={
+                                    index ===
+                                      steamFavoriteAppIds.length -
+                                        1 ||
+                                    steamFavoritesSaving
+                                  }
+                                  aria-label={
+                                    `Move ${game.name || 'game'} down`
+                                  }
+                                >
+                                  ↓
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="steam-remove-favorite-btn"
+                                  onClick={() =>
+                                    handleToggleSteamFavorite(
+                                      game.appId
+                                    )
+                                  }
+                                  disabled={
+                                    steamFavoritesSaving
+                                  }
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        }
+                      )}
+                    </div>
+                  )}
+
+                  <div className="steam-library-toolbar">
+                    <input
+                      type="search"
+                      className="steam-library-search"
+                      value={
+                        steamLibrarySearch
+                      }
+                      onChange={
+                        event =>
+                          setSteamLibrarySearch(
+                            event.target.value
+                          )
+                      }
+                      placeholder="Search your Steam library"
+                      aria-label="Search Steam library"
+                    />
+                  </div>
+
+                  {!steamLibraryLoading &&
+                    steamLibrary.length ===
+                      0 && (
+                    <div className="steam-favorites-empty">
+                      No games were found in your Steam
+                      library.
+                    </div>
+                  )}
+
+                  {steamLibrary.length >
+                    0 && (
+                    <div className="steam-library-list">
+                      {steamLibrary
+                        .filter(
+                          game => {
+                            const query =
+                              steamLibrarySearch
+                                .trim()
+                                .toLowerCase()
+
+                            if (!query) {
+                              return true
+                            }
+
+                            return String(
+                              game.name ||
+                                ''
+                            )
+                              .toLowerCase()
+                              .includes(
+                                query
+                              )
+                          }
+                        )
+                        .map(game => {
+                          const selected =
+                            steamFavoriteAppIds.includes(
+                              String(
+                                game.appId
+                              )
+                            )
+
+                          return (
+                            <div
+                              key={
+                                game.appId
+                              }
+                              className={
+                                `steam-library-game ${
+                                  selected
+                                    ? 'selected'
+                                    : ''
+                                }`
+                              }
+                            >
+                              <div className="steam-game-identity">
+                                {game.iconUrl ? (
+                                  <img
+                                    src={
+                                      game.iconUrl
+                                    }
+                                    alt=""
+                                    aria-hidden="true"
+                                    className="steam-game-icon"
+                                  />
+                                ) : (
+                                  <div
+                                    className="steam-game-icon steam-game-icon-fallback"
+                                    aria-hidden="true"
+                                  >
+                                    🎮
+                                  </div>
+                                )}
+
+                                <div className="steam-game-copy">
+                                  <span className="steam-game-name">
+                                    {game.name ||
+                                      `Steam App ${game.appId}`}
+                                  </span>
+
+                                  <span className="steam-game-hours">
+                                    {Number(
+                                      game.playtimeHours ||
+                                        0
+                                    ).toLocaleString(
+                                      undefined,
+                                      {
+                                        maximumFractionDigits:
+                                          1
+                                      }
+                                    )}{' '}
+                                    hrs played
+                                  </span>
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                className={
+                                  `steam-favorite-toggle ${
+                                    selected
+                                      ? 'selected'
+                                      : ''
+                                  }`
+                                }
+                                onClick={() =>
+                                  handleToggleSteamFavorite(
+                                    game.appId
+                                  )
+                                }
+                                disabled={
+                                  steamFavoritesSaving ||
+                                  (
+                                    !selected &&
+                                    steamFavoriteAppIds.length >=
+                                      6
+                                  )
+                                }
+                                aria-pressed={
+                                  selected
+                                }
+                              >
+                                {selected
+                                  ? 'Added'
+                                  : 'Add'}
+                              </button>
+                            </div>
+                          )
+                        })}
+                    </div>
+                  )}
+
+                  <div className="steam-favorites-footer">
+                    <span className="steam-favorites-save-note">
+                      Changes are not visible on your
+                      profile until you save.
+                    </span>
+
+                    <button
+                      type="button"
+                      className="steam-favorites-save-btn"
+                      onClick={
+                        handleSaveSteamFavorites
+                      }
+                      disabled={
+                        steamFavoritesSaving ||
+                        steamLibraryLoading
+                      }
+                    >
+                      {steamFavoritesSaving
+                        ? 'Saving...'
+                        : 'Save favorites'}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
 

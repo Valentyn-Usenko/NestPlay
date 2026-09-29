@@ -345,11 +345,294 @@ async function getPlayerSummaries(
 }
 
 
+function normalizeOwnedGame(
+  game
+) {
+  if (
+    !game ||
+    typeof game !==
+      'object' ||
+    !Number.isInteger(
+      game.appid
+    ) ||
+    game.appid <= 0
+  ) {
+    return null
+  }
+
+  const appId =
+    String(
+      game.appid
+    )
+
+  const name =
+    typeof game.name ===
+      'string' &&
+    game.name.trim()
+      ? game.name.trim()
+      : null
+
+  const playtimeForeverMinutes =
+    Number.isInteger(
+      game.playtime_forever
+    ) &&
+    game.playtime_forever >= 0
+      ? game.playtime_forever
+      : 0
+
+  const playtime2WeeksMinutes =
+    Number.isInteger(
+      game.playtime_2weeks
+    ) &&
+    game.playtime_2weeks >= 0
+      ? game.playtime_2weeks
+      : null
+
+  const iconHash =
+    typeof game.img_icon_url ===
+      'string' &&
+    /^[a-f0-9]+$/i.test(
+      game.img_icon_url
+    )
+      ? game.img_icon_url
+      : null
+
+  return {
+    appId,
+    name,
+
+    playtimeForeverMinutes,
+
+    playtimeHours:
+      Math.round(
+        (
+          playtimeForeverMinutes /
+          60
+        ) * 10
+      ) / 10,
+
+    playtime2WeeksMinutes,
+
+    iconUrl:
+      iconHash
+        ? `https://media.steampowered.com/steamcommunity/public/images/apps/${appId}/${iconHash}.jpg`
+        : null
+  }
+}
+
+
+async function getOwnedGames(
+  steamId,
+  options = {}
+) {
+  const ids =
+    normalizeSteamIds([
+      steamId
+    ])
+
+  const normalizedSteamId =
+    ids[0]
+
+  const apiKey =
+    getSteamWebApiKey()
+
+  const fetchImpl =
+    options.fetchImpl ||
+    fetch
+
+  const url =
+    new URL(
+      '/IPlayerService/GetOwnedGames/v1/',
+      STEAM_WEB_API_BASE_URL
+    )
+
+  url.searchParams.set(
+    'steamid',
+    normalizedSteamId
+  )
+
+  url.searchParams.set(
+    'include_appinfo',
+    'true'
+  )
+
+  url.searchParams.set(
+    'include_played_free_games',
+    'true'
+  )
+
+  let response
+
+  try {
+    response =
+      await fetchImpl(
+        url,
+        {
+          method:
+            'GET',
+
+          headers: {
+            'x-webapi-key':
+              apiKey,
+
+            accept:
+              'application/json'
+          },
+
+          signal:
+            AbortSignal.timeout(
+              10000
+            )
+        }
+      )
+  } catch (error) {
+    if (
+      error?.name ===
+        'TimeoutError' ||
+      error?.name ===
+        'AbortError'
+    ) {
+      const timeoutError =
+        new Error(
+          'Steam Web API request timed out'
+        )
+
+      timeoutError.statusCode =
+        504
+
+      throw timeoutError
+    }
+
+    const requestError =
+      new Error(
+        'Could not reach Steam Web API'
+      )
+
+    requestError.statusCode =
+      502
+
+    throw requestError
+  }
+
+  if (!response.ok) {
+    const error =
+      new Error(
+        `Steam Web API returned HTTP ${response.status}`
+      )
+
+    error.statusCode =
+      502
+
+    throw error
+  }
+
+  let data
+
+  try {
+    data =
+      await response.json()
+  } catch {
+    const error =
+      new Error(
+        'Steam Web API returned invalid JSON'
+      )
+
+    error.statusCode =
+      502
+
+    throw error
+  }
+
+  const steamResponse =
+    data?.response
+
+  if (
+    !steamResponse ||
+    typeof steamResponse !==
+      'object' ||
+    Array.isArray(
+      steamResponse
+    )
+  ) {
+    const error =
+      new Error(
+        'Steam Web API response was malformed'
+      )
+
+    error.statusCode =
+      502
+
+    throw error
+  }
+
+  if (
+    !Array.isArray(
+      steamResponse.games
+    )
+  ) {
+    if (
+      steamResponse.game_count ===
+      0
+    ) {
+      return {
+        visible: true,
+        games: []
+      }
+    }
+
+    if (
+      Object.keys(
+        steamResponse
+      ).length === 0
+    ) {
+      return {
+        visible: false,
+        games: []
+      }
+    }
+
+    const error =
+      new Error(
+        'Steam owned games response was malformed'
+      )
+
+    error.statusCode =
+      502
+
+    throw error
+  }
+
+  const games =
+    steamResponse.games
+      .map(
+        normalizeOwnedGame
+      )
+      .filter(Boolean)
+      .sort(
+        (
+          first,
+          second
+        ) =>
+          second
+            .playtimeForeverMinutes -
+          first
+            .playtimeForeverMinutes
+      )
+
+  return {
+    visible: true,
+    games
+  }
+}
+
+
 module.exports = {
   getPlayerSummaries,
+  getOwnedGames,
 
   _test: {
     getSteamWebApiKey,
+    normalizeOwnedGame,
     normalizePlayer,
     normalizeSteamIds
   }

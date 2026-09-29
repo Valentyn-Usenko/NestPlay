@@ -1477,6 +1477,365 @@ main {
     translateY(0);
 }
 
+.steam-favorites-panel {
+  margin:
+    0.65rem
+    0
+    0.8rem;
+  padding: 1rem;
+  background: #09090a;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.steam-favorites-header,
+.steam-selected-header,
+.steam-favorites-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.steam-favorites-title {
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.steam-favorites-subtitle,
+.steam-favorites-save-note {
+  margin-top: 0.2rem;
+  color: var(--muted-2);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.steam-library-refresh-btn,
+.steam-favorites-save-btn,
+.steam-favorite-toggle,
+.steam-order-btn,
+.steam-remove-favorite-btn {
+  flex-shrink: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    transform 150ms ease,
+    opacity 150ms ease;
+}
+
+.steam-library-refresh-btn,
+.steam-favorite-toggle,
+.steam-order-btn {
+  color: var(--text-soft);
+  background:
+    rgba(255, 255, 255, 0.025);
+  border:
+    1px solid
+    var(--line-strong);
+}
+
+.steam-library-refresh-btn {
+  padding:
+    0.42rem
+    0.7rem;
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.steam-library-refresh-btn:hover:not(:disabled),
+.steam-order-btn:hover:not(:disabled) {
+  color: #fff;
+  background:
+    rgba(255, 255, 255, 0.055);
+  border-color:
+    rgba(255, 90, 54, 0.35);
+}
+
+.steam-library-error,
+.steam-library-private {
+  margin-top: 0.8rem;
+  padding: 0.7rem;
+  border-radius: 9px;
+  font-size: 0.78rem;
+}
+
+.steam-library-error {
+  color: #ff9d90;
+  background:
+    rgba(255, 82, 61, 0.06);
+  border:
+    1px solid
+    rgba(255, 82, 61, 0.25);
+}
+
+.steam-library-private {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--text-soft);
+  background:
+    rgba(255, 255, 255, 0.025);
+  border:
+    1px solid
+    var(--line);
+}
+
+.steam-library-private strong {
+  color: var(--text);
+}
+
+.steam-selected-header {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-soft);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.steam-selected-list,
+.steam-library-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.steam-selected-game,
+.steam-library-game {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.55rem;
+  background:
+    rgba(255, 255, 255, 0.018);
+  border:
+    1px solid
+    var(--line);
+  border-radius: 10px;
+}
+
+.steam-library-game.selected {
+  background:
+    rgba(255, 90, 54, 0.045);
+  border-color:
+    rgba(255, 90, 54, 0.24);
+}
+
+.steam-game-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.steam-game-icon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: #111214;
+  border:
+    1px solid
+    var(--line);
+  border-radius: 8px;
+}
+
+.steam-game-icon-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.steam-game-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.steam-game-name {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.steam-game-hours {
+  color: var(--muted-2);
+  font-size: 0.72rem;
+}
+
+.steam-selected-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.steam-order-btn {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 0.8rem;
+}
+
+.steam-remove-favorite-btn {
+  padding:
+    0.37rem
+    0.6rem;
+  color: #ff9384;
+  background:
+    rgba(255, 82, 61, 0.045);
+  border:
+    1px solid
+    rgba(255, 82, 61, 0.24);
+  font-size: 0.73rem;
+  font-weight: 650;
+}
+
+.steam-remove-favorite-btn:hover:not(:disabled) {
+  color: #fff;
+  background:
+    rgba(255, 82, 61, 0.1);
+  border-color:
+    rgba(255, 82, 61, 0.45);
+}
+
+.steam-library-toolbar {
+  margin-top: 1rem;
+  margin-bottom: 0.55rem;
+}
+
+.steam-library-search {
+  width: 100%;
+  padding:
+    0.58rem
+    0.7rem;
+  color: var(--text);
+  background: #111214;
+  border:
+    1px solid
+    var(--line-strong);
+  border-radius: 9px;
+  outline: none;
+  font-size: 0.8rem;
+}
+
+.steam-library-search:focus {
+  border-color:
+    rgba(255, 90, 54, 0.5);
+  box-shadow:
+    0 0 0 2px
+    rgba(255, 90, 54, 0.08);
+}
+
+.steam-library-list {
+  max-height: 320px;
+  padding-right: 0.2rem;
+  overflow-y: auto;
+}
+
+.steam-favorite-toggle {
+  min-width: 56px;
+  padding:
+    0.38rem
+    0.6rem;
+  font-size: 0.73rem;
+  font-weight: 700;
+}
+
+.steam-favorite-toggle.selected {
+  color: #ffb29f;
+  background:
+    rgba(255, 90, 54, 0.08);
+  border-color:
+    rgba(255, 90, 54, 0.34);
+}
+
+.steam-favorites-empty {
+  padding:
+    0.7rem
+    0;
+  color: var(--muted-2);
+  font-size: 0.77rem;
+}
+
+.steam-favorites-footer {
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top:
+    1px solid
+    var(--line);
+}
+
+.steam-favorites-save-btn {
+  padding:
+    0.48rem
+    0.8rem;
+  color: #fff;
+  background:
+    var(--accent);
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.1);
+  font-size: 0.77rem;
+  font-weight: 700;
+}
+
+.steam-favorites-save-btn:hover:not(:disabled) {
+  transform:
+    translateY(-1px);
+  filter:
+    brightness(1.08);
+}
+
+.steam-library-refresh-btn:disabled,
+.steam-favorites-save-btn:disabled,
+.steam-favorite-toggle:disabled,
+.steam-order-btn:disabled,
+.steam-remove-favorite-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+@media (max-width: 640px) {
+  .steam-favorites-header,
+  .steam-favorites-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .steam-library-refresh-btn,
+  .steam-favorites-save-btn {
+    width: 100%;
+  }
+
+  .steam-selected-game,
+  .steam-library-game {
+    align-items: flex-start;
+  }
+
+  .steam-selected-game {
+    flex-direction: column;
+  }
+
+  .steam-selected-actions {
+    width: 100%;
+  }
+
+  .steam-remove-favorite-btn {
+    margin-left: auto;
+  }
+}
+
 .steam-manage-panel {
   display: flex;
   align-items: center;
@@ -6224,5 +6583,146 @@ header {
 
   .game-discovery-panel {
     max-height: 55vh;
+  }
+}
+/* --------------------------------------------------
+   PROFILE STEAM FAVORITES
+-------------------------------------------------- */
+
+.profile-steam-favorites {
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  background:
+    rgba(12, 12, 14, 0.86);
+  border:
+    1px solid
+    var(--line);
+  border-radius: 14px;
+}
+
+.profile-steam-favorites-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.profile-steam-favorites-heading h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.profile-steam-favorites-heading span {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--muted-2);
+  font-size: 0.72rem;
+}
+
+.profile-steam-logo {
+  width: 24px;
+  height: 24px;
+  opacity: 0.72;
+}
+
+.profile-steam-games-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(
+        0,
+        1fr
+      )
+    );
+  gap: 0.55rem;
+}
+
+.profile-steam-game-card {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.65rem;
+  background:
+    rgba(255, 255, 255, 0.02);
+  border:
+    1px solid
+    var(--line);
+  border-radius: 10px;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    transform 150ms ease;
+}
+
+.profile-steam-game-card:hover {
+  transform:
+    translateY(-1px);
+  background:
+    rgba(255, 255, 255, 0.035);
+  border-color:
+    rgba(255, 90, 54, 0.22);
+}
+
+.profile-steam-game-icon {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: #111214;
+  border:
+    1px solid
+    var(--line);
+  border-radius: 9px;
+}
+
+.profile-steam-game-icon-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-steam-game-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.profile-steam-game-name {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-steam-game-hours {
+  color: var(--muted-2);
+  font-size: 0.71rem;
+}
+
+@media (max-width: 900px) {
+  .profile-steam-games-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(
+          0,
+          1fr
+        )
+      );
+  }
+}
+
+@media (max-width: 580px) {
+  .profile-steam-games-grid {
+    grid-template-columns:
+      1fr;
   }
 }
