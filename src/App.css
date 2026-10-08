@@ -6726,3 +6726,171 @@ header {
       1fr;
   }
 }
+
+/* --------------------------------------------------
+   PROFILE STEAM FAVORITES - COMPACT EDITOR
+-------------------------------------------------- */
+
+.profile-steam-favorites {
+  margin-top: 0.85rem;
+  margin-bottom: 0.85rem;
+  padding: 0.8rem;
+}
+
+.profile-steam-favorites-heading {
+  margin-bottom: 0.6rem;
+}
+
+.profile-steam-favorites-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.profile-steam-logo {
+  width: 21px;
+  height: 21px;
+}
+
+.profile-steam-games-grid {
+  gap: 0.4rem;
+}
+
+.profile-steam-game-card {
+  gap: 0.5rem;
+  padding: 0.45rem 0.55rem;
+}
+
+.profile-steam-game-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+}
+
+.profile-steam-game-name {
+  font-size: 0.78rem;
+}
+
+.profile-steam-game-hours {
+  font-size: 0.67rem;
+}
+
+.profile-steam-edit-btn,
+.profile-steam-library-btn {
+  border:
+    1px solid
+    rgba(255, 90, 54, 0.32);
+  border-radius: 8px;
+  color: #ffab96;
+  background:
+    rgba(255, 90, 54, 0.055);
+  cursor: pointer;
+  font-weight: 700;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+.profile-steam-edit-btn {
+  padding: 0.4rem 0.65rem;
+  font-size: 0.73rem;
+}
+
+.profile-steam-library-btn {
+  padding: 0.48rem 0.72rem;
+  font-size: 0.75rem;
+}
+
+.profile-steam-edit-btn:hover,
+.profile-steam-library-btn:hover:not(:disabled) {
+  color: #fff;
+  background:
+    rgba(255, 90, 54, 0.11);
+  border-color:
+    rgba(255, 90, 54, 0.5);
+}
+
+.profile-steam-library-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.profile-steam-empty {
+  color: var(--muted-2);
+  font-size: 0.76rem;
+  padding: 0.25rem 0;
+}
+
+.profile-steam-editor {
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top:
+    1px solid
+    var(--line);
+}
+
+.profile-steam-editor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+}
+
+.profile-steam-library-panel {
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
+  border-top:
+    1px solid
+    var(--line);
+}
+
+.profile-steam-library-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.55rem;
+}
+
+.profile-steam-library-toolbar
+.steam-library-search {
+  flex: 1;
+}
+
+.profile-steam-save-notice {
+  margin-top: 0.6rem;
+  padding: 0.55rem 0.65rem;
+  border:
+    1px solid
+    rgba(80, 190, 110, 0.26);
+  border-radius: 8px;
+  color: #93d9a5;
+  background:
+    rgba(80, 190, 110, 0.055);
+  font-size: 0.75rem;
+}
+
+.profile-steam-selected-game {
+  padding: 0.45rem 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .profile-steam-favorites-actions {
+    gap: 0.35rem;
+  }
+
+  .profile-steam-editor-toolbar,
+  .profile-steam-library-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .profile-steam-library-btn,
+  .profile-steam-editor-toolbar
+  .steam-favorites-save-btn,
+  .profile-steam-library-toolbar
+  .steam-library-refresh-btn {
+    width: 100%;
+  }
+}

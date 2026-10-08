@@ -13,6 +13,7 @@ import {
 } from '../api'
 import ChatModal from './ChatModal'
 import ProfileAchievements from './ProfileAchievements'
+import SteamFavoritesManager from './SteamFavoritesManager'
 
 const AVATAR_COLORS = [
   {
@@ -72,6 +73,11 @@ export default function ProfilePage({
     steamFavoriteGames,
     setSteamFavoriteGames
   ] = useState([])
+
+  const [
+    steamFavoritesEditorOpen,
+    setSteamFavoritesEditorOpen
+  ] = useState(false)
 
   const [showAllPosts, setShowAllPosts] =
     useState(false)
@@ -791,27 +797,47 @@ export default function ProfilePage({
         </div>
       </div>
 
-      {steamFavoriteGames.length > 0 && (
-        <div className="profile-steam-favorites">
-          <div className="profile-steam-favorites-heading">
-            <div>
-              <h3>
-                Favorite Games
-              </h3>
+      <div className="profile-steam-favorites profile-steam-favorites-own">
+        <div className="profile-steam-favorites-heading">
+          <div>
+            <h3>
+              Favorite Games
+            </h3>
 
-              <span>
-                From Steam
-              </span>
-            </div>
+            <span>
+              From Steam
+            </span>
+          </div>
 
+          <div className="profile-steam-favorites-actions">
             <img
               src="/steam.svg"
               alt=""
               aria-hidden="true"
               className="profile-steam-logo"
             />
-          </div>
 
+            <button
+              type="button"
+              className="profile-steam-edit-btn"
+              onClick={() =>
+                setSteamFavoritesEditorOpen(
+                  previous =>
+                    !previous
+                )
+              }
+              aria-expanded={
+                steamFavoritesEditorOpen
+              }
+            >
+              {steamFavoritesEditorOpen
+                ? 'Done'
+                : 'Edit favorites'}
+            </button>
+          </div>
+        </div>
+
+        {steamFavoriteGames.length > 0 ? (
           <div className="profile-steam-games-grid">
             {steamFavoriteGames.map(
               game => (
@@ -852,15 +878,30 @@ export default function ProfilePage({
                             1
                         }
                       )}{' '}
-                      hours played
+                      hrs
                     </span>
                   </div>
                 </div>
               )
             )}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="profile-steam-empty">
+            No favorite Steam games selected yet.
+          </div>
+        )}
+
+        {steamFavoritesEditorOpen && (
+          <SteamFavoritesManager
+            currentGames={
+              steamFavoriteGames
+            }
+            onSaved={
+              setSteamFavoriteGames
+            }
+          />
+        )}
+      </div>
 
       <div
         ref={achievementsRef}
