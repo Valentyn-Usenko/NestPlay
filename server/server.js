@@ -24,6 +24,11 @@ const {
 const pool = require('./db')
 
 const {
+  searchIgdbGames
+} = require('./igdb')
+
+
+const {
   verifyAuthToken
 } = require('./auth')
 
@@ -4390,15 +4395,17 @@ app.get(
 )
 
 // ==================================================
-// RAWG GAME SEARCH
+// IGDB GAME SEARCH
 //
 // Browser
-// ↓
+// |
+// v
 // NestPlay backend
-// ↓
-// RAWG
+// |
+// v
+// IGDB
 //
-// RAWG API key stays server-side.
+// IGDB credentials stay server-side.
 // ==================================================
 
 app.get(
@@ -4417,72 +4424,9 @@ app.get(
         })
       }
 
-      if (
-        !process.env.RAWG_API_KEY
-      ) {
-        console.error(
-          'RAWG_API_KEY is missing'
-        )
-
-        return res.status(500).json({
-          error:
-            'Game search is not configured'
-        })
-      }
-
-      const rawgUrl =
-        new URL(
-          'https://api.rawg.io/api/games'
-        )
-
-      rawgUrl.searchParams.set(
-        'search',
-        query
-      )
-
-      rawgUrl.searchParams.set(
-        'key',
-        process.env.RAWG_API_KEY
-      )
-
-      rawgUrl.searchParams.set(
-        'page_size',
-        '10'
-      )
-
-      const response =
-        await fetch(
-          rawgUrl
-        )
-
-      if (!response.ok) {
-        console.error(
-          'RAWG request failed:',
-          response.status
-        )
-
-        return res.status(502).json({
-          error:
-            'RAWG game search failed'
-        })
-      }
-
-      const data =
-        await response.json()
-
       const results =
-        (data.results || []).map(
-          game => ({
-            id:
-              game.id,
-
-            name:
-              game.name,
-
-            background_image:
-              game.background_image ||
-              null
-          })
+        await searchIgdbGames(
+          query
         )
 
       return res.json({
@@ -4490,18 +4434,23 @@ app.get(
       })
     } catch (error) {
       console.error(
-        'RAWG search error:',
+        'IGDB search error:',
         error
       )
 
-      return res.status(500).json({
-        error:
-          'Game search failed'
-      })
+      return res
+        .status(
+          error.statusCode ||
+          500
+        )
+        .json({
+          error:
+            error.publicMessage ||
+            'Game search failed'
+        })
     }
   }
 )
-
 
 // ==================================================
 // START SERVER
