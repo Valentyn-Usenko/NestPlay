@@ -4,6 +4,7 @@ import React, {
 } from 'react'
 
 import AuthModal from './AuthModal'
+import GameContext from './GameContext'
 
 import {
   getPost,
@@ -546,16 +547,18 @@ export default function PostPage({
         {new Date(
           post.created_at
         ).toLocaleString()}
-      </div>
-
-
-      {post.game_art_url && (
-        <img
-          className="game-art"
-          src={post.game_art_url}
-          alt="art"
+      </div>      {(
+        post.game_id ||
+        post.game_name ||
+        post.game_art_url
+      ) && (
+        <GameContext
+          gameId={post.game_id}
+          gameName={post.game_name}
+          gameArtUrl={post.game_art_url}
         />
       )}
+
 
 
       <p>

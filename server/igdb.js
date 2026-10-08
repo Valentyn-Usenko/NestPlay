@@ -201,19 +201,26 @@ function invalidateAccessToken() {
 function escapeSearchTerm(
   value
 ) {
-  return String(value)
-    .replace(
-      /\\/g,
-      '\\\\'
+  return Array.from(
+      String(value)
     )
-    .replace(
-      /"/g,
-      '\\"'
-    )
-    .replace(
-      /[\u0000-\u001f]/g,
-      ' '
-    )
+      .map(
+        character =>
+          character.charCodeAt(
+            0
+          ) <= 31
+            ? ' '
+            : character
+      )
+      .join('')
+      .replace(
+        /\\/g,
+        '\\\\'
+      )
+      .replace(
+        /"/g,
+        '\\"'
+      )
 }
 
 
@@ -416,13 +423,398 @@ async function searchIgdbGames(
 }
 
 
+
+const STORE_PLATFORM_DEFINITIONS = [
+  {
+    key:
+      'steam',
+
+    label:
+      'Steam',
+
+    hosts: [
+      'steampowered.com'
+    ]
+  },
+
+  {
+    key:
+      'playstation',
+
+    label:
+      'PlayStation',
+
+    hosts: [
+      'playstation.com'
+    ]
+  },
+
+  {
+    key:
+      'xbox',
+
+    label:
+      'Xbox / Microsoft',
+
+    hosts: [
+      'xbox.com',
+      'microsoft.com'
+    ]
+  },
+
+  {
+    key:
+      'epic',
+
+    label:
+      'Epic Games',
+
+    hosts: [
+      'epicgames.com'
+    ]
+  },
+
+  {
+    key:
+      'gog',
+
+    label:
+      'GOG',
+
+    hosts: [
+      'gog.com'
+    ]
+  }
+]
+
+
+function hostMatches(
+  hostname,
+  allowedHost
+) {
+  return (
+    hostname ===
+      allowedHost ||
+    hostname.endsWith(
+      `.${allowedHost}`
+    )
+  )
+}
+
+
+function isAllowedExternalUrl(
+  platformKey,
+  value
+) {
+  const definition =
+    STORE_PLATFORM_DEFINITIONS
+      .find(
+        item =>
+          item.key ===
+          platformKey
+      )
+
+  if (
+    !definition ||
+    !value
+  ) {
+    return false
+  }
+
+  let parsedUrl
+
+  try {
+    parsedUrl =
+      new URL(
+        String(value)
+      )
+  } catch {
+    return false
+  }
+
+  if (
+    parsedUrl.protocol !==
+      'https:'
+  ) {
+    return false
+  }
+
+  const hostname =
+    parsedUrl.hostname
+      .toLowerCase()
+
+  return definition.hosts
+    .some(
+      host =>
+        hostMatches(
+          hostname,
+          host
+        )
+    )
+}
+
+
+function normalizeStoreLinks(
+  game
+) {
+  const externalGames =
+    Array.isArray(
+      game?.external_games
+    )
+      ? game.external_games
+      : []
+
+  const websites =
+    Array.isArray(
+      game?.websites
+    )
+      ? game.websites
+      : []
+
+  const links =
+    []
+
+  for (
+    const definition
+    of STORE_PLATFORM_DEFINITIONS
+  ) {
+    let candidate =
+      externalGames.find(
+        item =>
+          isAllowedExternalUrl(
+            definition.key,
+            item?.url
+          )
+      )
+
+    let externalId =
+      candidate?.uid ||
+      null
+
+    if (!candidate) {
+      candidate =
+        websites.find(
+          item =>
+            item?.trusted ===
+              true &&
+            isAllowedExternalUrl(
+              definition.key,
+              item?.url
+            )
+        )
+
+      externalId =
+        null
+    }
+
+    if (!candidate) {
+      continue
+    }
+
+    links.push({
+      key:
+        definition.key,
+
+      label:
+        definition.label,
+
+      url:
+        candidate.url,
+
+      externalId
+    })
+  }
+
+  return links
+}
+
+
+function normalizeGameContext(
+  game
+) {
+  if (
+    !game ||
+    !game.id ||
+    !game.name
+  ) {
+    return {
+      game:
+        null,
+
+      platforms:
+        []
+    }
+  }
+
+  return {
+    game:
+      normalizeGame(
+        game
+      ),
+
+    platforms:
+      normalizeStoreLinks(
+        game
+      )
+  }
+}
+
+
+async function requestGameContextById(
+  gameId,
+  accessToken
+) {
+  const {
+    clientId
+  } =
+    getCredentials()
+
+  const numericGameId =
+    Number(
+      gameId
+    )
+
+  if (
+    !Number.isSafeInteger(
+      numericGameId
+    ) ||
+    numericGameId <= 0
+  ) {
+    throw createIgdbError(
+      'Invalid IGDB game ID',
+      400,
+      'Invalid game ID'
+    )
+  }
+
+  const body = `
+fields
+  id,
+  name,
+  cover.image_id,
+  artworks.image_id,
+  screenshots.image_id,
+  external_games.url,
+  external_games.uid,
+  websites.trusted,
+  websites.url;
+where id = ${numericGameId};
+limit 1;
+`.trim()
+
+  try {
+    return await fetch(
+      IGDB_GAMES_URL,
+      {
+        method:
+          'POST',
+
+        headers: {
+          Accept:
+            'application/json',
+
+          'Client-ID':
+            clientId,
+
+          Authorization:
+            `Bearer ${accessToken}`,
+
+          'Content-Type':
+            'text/plain'
+        },
+
+        body,
+
+        signal:
+          AbortSignal.timeout(
+            REQUEST_TIMEOUT_MS
+          )
+      }
+    )
+  } catch (error) {
+    throw createIgdbError(
+      `Could not contact IGDB for game context: ${error.message}`,
+      502,
+      'Game context provider is unavailable'
+    )
+  }
+}
+
+
+async function getIgdbGameContext(
+  gameId
+) {
+  let accessToken =
+    await getAccessToken()
+
+  let response =
+    await requestGameContextById(
+      gameId,
+      accessToken
+    )
+
+  if (
+    response.status ===
+      401
+  ) {
+    invalidateAccessToken()
+
+    accessToken =
+      await getAccessToken()
+
+    response =
+      await requestGameContextById(
+        gameId,
+        accessToken
+      )
+  }
+
+  if (!response.ok) {
+    const providerMessage =
+      await response
+        .text()
+        .catch(
+          () => ''
+        )
+
+    throw createIgdbError(
+      `IGDB game context request failed with status ${response.status}: ${providerMessage.slice(0, 300)}`,
+      502,
+      'Game context is temporarily unavailable'
+    )
+  }
+
+  const data =
+    await response.json()
+
+  if (
+    !Array.isArray(data) ||
+    data.length === 0
+  ) {
+    return {
+      game:
+        null,
+
+      platforms:
+        []
+    }
+  }
+
+  return normalizeGameContext(
+    data[0]
+  )
+}
 module.exports = {
   searchIgdbGames,
+  getIgdbGameContext,
 
   _test: {
     escapeSearchTerm,
     makeImageUrl,
     normalizeGame,
+    normalizeGameContext,
+    normalizeStoreLinks,
+    isAllowedExternalUrl,
     invalidateAccessToken
   }
 }

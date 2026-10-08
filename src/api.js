@@ -97,6 +97,17 @@ export function getPost(id) {
   )
 }
 
+export function getGameContext(
+  gameId
+) {
+  return apiFetch(
+    `/api/games/${encodeURIComponent(
+      gameId
+    )}/context`
+  )
+}
+
+
 export function createPost(post) {
   return apiFetch(
     '/api/posts',

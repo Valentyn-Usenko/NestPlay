@@ -24,6 +24,10 @@ const {
 const pool = require('./db')
 
 const {
+  getGameContext
+} = require('./gameContext')
+
+const {
   searchIgdbGames
 } = require('./igdb')
 
@@ -4407,6 +4411,60 @@ app.get(
 //
 // IGDB credentials stay server-side.
 // ==================================================
+
+// ==================================================
+// GAME CONTEXT
+// ==================================================
+
+app.get(
+  '/api/games/:gameId/context',
+  async (
+    req,
+    res
+  ) => {
+    try {
+      const gameId =
+        String(
+          req.params.gameId ||
+          ''
+        ).trim()
+
+      if (!gameId) {
+        return res
+          .status(400)
+          .json({
+            error:
+              'Game ID is required'
+          })
+      }
+
+      const context =
+        await getGameContext(
+          gameId
+        )
+
+      return res.json(
+        context
+      )
+    } catch (error) {
+      console.error(
+        'Game context error:',
+        error
+      )
+
+      return res
+        .status(
+          error.statusCode ||
+          500
+        )
+        .json({
+          error:
+            error.publicMessage ||
+            'Game context unavailable'
+        })
+    }
+  }
+)
 
 app.get(
   '/api/games/search',
