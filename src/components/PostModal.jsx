@@ -1,21 +1,12 @@
-import React, {
-  useEffect,
-  useState
-} from 'react'
+import React, { useState } from 'react'
 
 import {
   createPost
 } from '../api'
 
-import {
-  getAuthAccessToken
-} from '../authSession'
-
-import {
-  API_BASE_URL
-} from '../config'
-
 import useEscapeKey from '../hooks/useEscapeKey'
+
+import GameSearch from './GameSearch'
 
 
 export default function PostModal({
@@ -33,23 +24,7 @@ export default function PostModal({
     content,
     setContent
   ] = useState('')
-
-  const [
-    query,
-    setQuery
-  ] = useState('')
-
-  const [
-    games,
-    setGames
-  ] = useState([])
-
-  const [
-    loadingGames,
-    setLoadingGames
-  ] = useState(false)
-
-  const [
+const [
     creating,
     setCreating
   ] = useState(false)
@@ -107,101 +82,6 @@ export default function PostModal({
     onClose
   )
 
-
-  // ==================================================
-  // GAME SEARCH
-  // ==================================================
-
-  useEffect(() => {
-    if (
-      gameLocked ||
-      !query.trim()
-    ) {
-      setGames([])
-      return
-    }
-
-    let canceled =
-      false
-
-    const timeout =
-      setTimeout(
-        async () => {
-          setLoadingGames(
-            true
-          )
-
-          try {
-            const accessToken =
-              await getAuthAccessToken()
-
-            if (!accessToken) {
-              throw new Error(
-                'You must be logged in to search games.'
-              )
-            }
-
-            const response =
-              await fetch(
-                `${API_BASE_URL}/api/games/search?q=${encodeURIComponent(
-                  query.trim()
-                )}`,
-                {
-                  headers: {
-                    Authorization:
-                      `Bearer ${accessToken}`
-                  }
-                }
-              )
-
-            const data =
-              await response.json()
-
-            if (!response.ok) {
-              throw new Error(
-                data.error ||
-                'Game search failed'
-              )
-            }
-
-            if (!canceled) {
-              setGames(
-                data.results ||
-                []
-              )
-            }
-          } catch (error) {
-            console.error(
-              'Game search failed:',
-              error
-            )
-
-            if (!canceled) {
-              setGames([])
-            }
-          } finally {
-            if (!canceled) {
-              setLoadingGames(
-                false
-              )
-            }
-          }
-        },
-        300
-      )
-
-    return () => {
-      canceled =
-        true
-
-      clearTimeout(
-        timeout
-      )
-    }
-  }, [
-    query,
-    gameLocked
-  ])
 
 
   // ==================================================
@@ -355,147 +235,14 @@ export default function PostModal({
             />
 
           </label>
+          <GameSearch
+            value={selectedGame}
+            onChange={setSelectedGame}
+            locked={gameLocked}
+            required
+          />
 
 
-          {!gameLocked && (
-            <div className="post-game-search">
-
-              <label className="post-create-field">
-
-                <span>
-                  Search Game
-                  <b>
-                    *
-                  </b>
-                </span>
-
-                <input
-                  placeholder="Type a game name..."
-                  value={
-                    query
-                  }
-                  onChange={
-                    e =>
-                      setQuery(
-                        e.target.value
-                      )
-                  }
-                />
-
-              </label>
-
-
-              {loadingGames && (
-                <div className="post-game-searching">
-                  Searching...
-                </div>
-              )}
-
-
-              {games.length >
-                0 && (
-                <div className="post-game-results">
-
-                  {games.map(
-                    game => (
-                      <button
-                        type="button"
-                        key={
-                          game.id
-                        }
-                        className="post-game-result"
-                        onClick={() => {
-                          setSelectedGame(
-                            game
-                          )
-
-                          setGames([])
-                          setQuery('')
-                        }}
-                      >
-
-                        {game.background_image ? (
-                          <img
-                            src={
-                              game.background_image
-                            }
-                            alt={
-                              game.name
-                            }
-                          />
-                        ) : (
-                          <div className="post-game-result-placeholder">
-                            🎮
-                          </div>
-                        )}
-
-                        <span>
-                          {
-                            game.name
-                          }
-                        </span>
-
-                      </button>
-                    )
-                  )}
-
-                </div>
-              )}
-
-            </div>
-          )}
-
-
-          {selectedGame && (
-            <div className="selected-game-card">
-
-              {selectedGame
-                .background_image && (
-                <img
-                  src={
-                    selectedGame
-                      .background_image
-                  }
-                  alt={
-                    selectedGame.name
-                  }
-                />
-              )}
-
-
-              <div className="selected-game-overlay">
-
-                <span>
-                  {gameLocked
-                    ? 'Posting in'
-                    : 'Selected Game'}
-                </span>
-
-                <strong>
-                  {
-                    selectedGame.name
-                  }
-                </strong>
-
-              </div>
-
-
-              {!gameLocked && (
-                <button
-                  type="button"
-                  className="selected-game-remove"
-                  onClick={() =>
-                    setSelectedGame(
-                      null
-                    )
-                  }
-                >
-                  ✕ Remove
-                </button>
-              )}
-
-            </div>
-          )}
 
 
           <div className="post-create-actions">

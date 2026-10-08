@@ -9,7 +9,9 @@
     "dev:server": "cd server && nodemon server.js",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sync": "node scripts/safe-git-sync.mjs",
+    "sync:watch": "node scripts/safe-git-sync.mjs --watch"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.1119.0",

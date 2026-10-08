@@ -302,7 +302,7 @@ fields
   artworks.image_id,
   screenshots.image_id;
 where version_parent = null;
-limit 10;
+limit 20;
 `.trim()
 
   try {
