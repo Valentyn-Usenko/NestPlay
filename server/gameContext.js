@@ -269,6 +269,8 @@ const defaultService =
 
 
 module.exports = {
+  parseProviderGameId,
+
   getGameContext:
     defaultService
       .getGameContext,

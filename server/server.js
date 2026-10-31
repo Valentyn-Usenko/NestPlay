@@ -24,8 +24,16 @@ const {
 const pool = require('./db')
 
 const {
+  malformedJsonErrorHandler
+} = require('./httpErrors')
+
+const {
   getGameContext
 } = require('./gameContext')
+
+const {
+  createCommunityRatingService
+} = require('./communityRating')
 
 const {
   searchIgdbGames
@@ -51,6 +59,11 @@ const {
 
 const app = express()
 
+const communityRatingService =
+  createCommunityRatingService(
+    pool
+  )
+
 app.disable(
   'x-powered-by'
 )
@@ -71,6 +84,10 @@ app.use(
 )
 
 app.use(express.json())
+
+app.use(
+  malformedJsonErrorHandler
+)
 
 
 // ==================================================
@@ -4465,6 +4482,163 @@ app.get(
     }
   }
 )
+
+// ==================================================
+// COMMUNITY RATING
+// ==================================================
+
+app.get(
+  '/api/games/:gameId/rating',
+  optionalAuth,
+  async (
+    req,
+    res
+  ) => {
+    try {
+      const rating =
+        await communityRatingService
+          .getCommunityRating({
+            gameId:
+              req.params.gameId,
+
+            userId:
+              req.user?.id ||
+              null
+          })
+
+      return res.json(
+        rating
+      )
+    } catch (error) {
+      console.error(
+        'Community Rating load error:',
+        error
+      )
+
+      return res
+        .status(
+          error.statusCode ||
+          500
+        )
+        .json({
+          error:
+            error.publicMessage ||
+            'Community Rating unavailable'
+        })
+    }
+  }
+)
+
+
+app.put(
+  '/api/games/:gameId/rating',
+  requireAuth,
+  async (
+    req,
+    res
+  ) => {
+    try {
+      const context =
+        await getGameContext(
+          req.params.gameId
+        )
+
+      if (!context.supported) {
+        return res
+          .status(400)
+          .json({
+            error:
+              'A valid IGDB game ID is required'
+          })
+      }
+
+      if (!context.game) {
+        return res
+          .status(404)
+          .json({
+            error:
+              'Game not found'
+          })
+      }
+
+      const rating =
+        await communityRatingService
+          .setCommunityRating({
+            gameId:
+              req.params.gameId,
+
+            userId:
+              req.user.id,
+
+            rating:
+              req.body?.rating
+          })
+
+      return res.json(
+        rating
+      )
+    } catch (error) {
+      console.error(
+        'Community Rating save error:',
+        error
+      )
+
+      return res
+        .status(
+          error.statusCode ||
+          500
+        )
+        .json({
+          error:
+            error.publicMessage ||
+            'Could not save Community Rating'
+        })
+    }
+  }
+)
+
+
+app.delete(
+  '/api/games/:gameId/rating',
+  requireAuth,
+  async (
+    req,
+    res
+  ) => {
+    try {
+      const rating =
+        await communityRatingService
+          .deleteCommunityRating({
+            gameId:
+              req.params.gameId,
+
+            userId:
+              req.user.id
+          })
+
+      return res.json(
+        rating
+      )
+    } catch (error) {
+      console.error(
+        'Community Rating delete error:',
+        error
+      )
+
+      return res
+        .status(
+          error.statusCode ||
+          500
+        )
+        .json({
+          error:
+            error.publicMessage ||
+            'Could not remove Community Rating'
+        })
+    }
+  }
+)
+
 
 app.get(
   '/api/games/search',

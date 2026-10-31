@@ -108,6 +108,50 @@ export function getGameContext(
 }
 
 
+export function getCommunityRating(
+  gameId
+) {
+  return apiFetch(
+    `/api/games/${encodeURIComponent(
+      gameId
+    )}/rating`
+  )
+}
+
+
+export function setCommunityRating(
+  gameId,
+  rating
+) {
+  return apiFetch(
+    `/api/games/${encodeURIComponent(
+      gameId
+    )}/rating`,
+    {
+      method: 'PUT',
+
+      body: JSON.stringify({
+        rating
+      })
+    }
+  )
+}
+
+
+export function deleteCommunityRating(
+  gameId
+) {
+  return apiFetch(
+    `/api/games/${encodeURIComponent(
+      gameId
+    )}/rating`,
+    {
+      method: 'DELETE'
+    }
+  )
+}
+
+
 export function createPost(post) {
   return apiFetch(
     '/api/posts',
