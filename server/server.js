@@ -7,6 +7,10 @@ const cors = require('cors')
 const multer = require('multer')
 
 const {
+  getAllowedFrontendOrigins
+} = require('./corsOrigins')
+
+const {
   randomUUID
 } = require('crypto')
 
@@ -79,7 +83,7 @@ const PORT =
 app.use(
   cors({
     origin:
-      process.env.FRONTEND_URL
+      getAllowedFrontendOrigins()
   })
 )
 
