@@ -1,0 +1,259 @@
+.game-context-hero {
+  margin: 1.25rem 0 1.45rem;
+  overflow: hidden;
+  background: #0b0b0d;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 16px;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.34);
+}
+
+.game-context-hero-media {
+  position: relative;
+  min-height: 260px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 76% 12%, rgba(255, 90, 54, 0.16), transparent 40%),
+    linear-gradient(135deg, #121216, #09090b);
+}
+
+.game-context-hero-media.has-artwork {
+  min-height: clamp(270px, 42vw, 390px);
+}
+
+.game-context-hero-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.01);
+}
+
+.game-context-hero-shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(7, 7, 9, 0.08) 0%,
+      rgba(7, 7, 9, 0.18) 34%,
+      rgba(7, 7, 9, 0.86) 78%,
+      #0b0b0d 100%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(7, 7, 9, 0.62) 0%,
+      transparent 62%
+    );
+  pointer-events: none;
+}
+
+.game-context-hero-copy {
+  position: absolute;
+  right: clamp(1rem, 3vw, 1.6rem);
+  bottom: clamp(1.05rem, 3vw, 1.65rem);
+  left: clamp(1rem, 3vw, 1.6rem);
+  z-index: 1;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.42rem;
+}
+
+.game-context-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.46rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.game-context-eyebrow-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--accent);
+  border-radius: 999px;
+  box-shadow: 0 0 16px rgba(255, 90, 54, 0.72);
+}
+
+.game-context-hero-copy h2 {
+  max-width: min(92%, 660px);
+  margin: 0;
+  color: #fff;
+  font-size: clamp(1.7rem, 4vw, 2.7rem);
+  font-weight: 850;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
+}
+
+.game-context-hero-footer {
+  position: relative;
+  z-index: 2;
+  padding: 0.9rem clamp(1rem, 3vw, 1.35rem) 1.05rem;
+  background: linear-gradient(180deg, #0b0b0d, #0d0d10);
+  border-top: 1px solid rgba(255, 255, 255, 0.055);
+}
+
+.game-context-platform-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.62rem;
+}
+
+.game-context-platform-heading > span {
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.game-context-platform-heading small {
+  color: var(--muted-2);
+  font-size: 0.65rem;
+}
+
+.game-context-platform-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.48rem;
+}
+
+.game-context-platform-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 116px;
+  min-height: 38px;
+  padding: 0.48rem 0.72rem;
+  color: var(--text-soft);
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 9px;
+  transition:
+    color 140ms ease,
+    background 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.game-context-platform-link:hover {
+  color: #fff;
+  background: rgba(255, 90, 54, 0.075);
+  border-color: rgba(255, 90, 54, 0.32);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
+}
+
+.game-context-platform-link:focus-visible {
+  color: #fff;
+  outline: none;
+  border-color: rgba(255, 90, 54, 0.72);
+  box-shadow: 0 0 0 3px rgba(255, 90, 54, 0.12);
+}
+
+.game-context-platform-name {
+  overflow: hidden;
+  font-size: 0.74rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.game-context-platform-arrow {
+  flex-shrink: 0;
+  color: var(--accent);
+  font-size: 0.8rem;
+}
+
+.game-context-status,
+.game-context-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 38px;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.game-context-status-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--accent);
+  border-radius: 999px;
+  box-shadow: 0 0 12px rgba(255, 90, 54, 0.5);
+  animation: game-context-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes game-context-pulse {
+  0%,
+  100% {
+    opacity: 0.38;
+    transform: scale(0.85);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.community-rating--game-context {
+  border-top: 1px solid rgba(255, 255, 255, 0.055);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.012),
+      rgba(255, 255, 255, 0.004)
+    ),
+    #0b0b0d;
+}
+
+@media (max-width: 640px) {
+  .game-context-hero {
+    margin: 1rem 0 1.2rem;
+    border-radius: 13px;
+  }
+
+  .game-context-hero-media,
+  .game-context-hero-media.has-artwork {
+    min-height: 240px;
+  }
+
+  .game-context-hero-copy h2 {
+    max-width: 100%;
+    font-size: clamp(1.45rem, 8vw, 2rem);
+  }
+
+  .game-context-platform-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .game-context-platform-link {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .game-context-platform-heading small {
+    display: none;
+  }
+}
+
+@media (max-width: 380px) {
+  .game-context-platform-list {
+    grid-template-columns: 1fr;
+  }
+}
