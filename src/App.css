@@ -3499,6 +3499,125 @@ main {
 
 
 /* ==================================================
+   GAME HUB COMMUNITY RATING
+================================================== */
+
+.hub-community-rating {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  min-height: 62px;
+  margin-bottom: 0.95rem;
+  padding: 0.68rem 0.82rem;
+
+  background:
+    rgba(7, 7, 7, 0.6);
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.09);
+
+  border-radius: 11px;
+
+  backdrop-filter:
+    blur(9px);
+}
+
+.hub-community-rating-label {
+  margin-bottom: 0.3rem;
+
+  color:
+    rgba(255, 255, 255, 0.58);
+
+  font-size: 0.62rem;
+  font-weight: 800;
+
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.hub-community-rating-line {
+  display: flex;
+  align-items: center;
+
+  gap: 0.62rem;
+}
+
+.hub-community-rating-stars {
+  display: flex;
+  align-items: center;
+
+  gap: 0.12rem;
+
+  line-height: 1;
+}
+
+.hub-community-rating-stars span {
+  color:
+    rgba(255, 255, 255, 0.2);
+
+  font-size: 0.95rem;
+}
+
+.hub-community-rating-stars span.active {
+  color:
+    var(--accent);
+}
+
+.hub-community-rating-line strong {
+  display: flex;
+  align-items: baseline;
+
+  gap: 0.16rem;
+
+  color: #fff;
+
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.hub-community-rating-line strong small {
+  color:
+    var(--muted);
+
+  font-size: 0.64rem;
+  font-weight: 700;
+}
+
+.hub-community-rating-count,
+.hub-community-rating-empty,
+.hub-community-rating-loading {
+  margin-top: 0.3rem;
+
+  color:
+    var(--muted);
+
+  font-size: 0.66rem;
+  font-weight: 650;
+}
+
+.hub-community-rating-loading {
+  animation:
+    hub-rating-pulse
+    1.2s
+    ease-in-out
+    infinite;
+}
+
+@keyframes hub-rating-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 0.9;
+  }
+}
+
+
+/* ==================================================
    GAME HUB STATS
 ================================================== */
 
@@ -4536,6 +4655,14 @@ main {
   .game-hub-info > p {
     font-size:
       0.8rem;
+  }
+
+  .hub-community-rating {
+    width:
+      100%;
+
+    margin-bottom:
+      0.85rem;
   }
 
   .hub-stats {

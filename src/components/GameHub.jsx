@@ -7,6 +7,7 @@ import React, {
   import {
     getPosts,
     getGameHub,
+    getCommunityRating,
     joinGameHub,
     leaveGameHub
   } from '../api'
@@ -65,11 +66,31 @@ import React, {
       communityBusy,
       setCommunityBusy
     ] = useState(false)
+
+    const [
+      ratingSummary,
+      setRatingSummary
+    ] = useState({
+      average: null,
+      count: 0
+    })
+
+    const [
+      ratingLoading,
+      setRatingLoading
+    ] = useState(false)
   
   
     const communityGameId =
       game?.id != null
         ? String(game.id)
+        : null
+
+    const ratingGameId =
+      /^igdb:\d+$/i.test(
+        communityGameId || ''
+      )
+        ? communityGameId
         : null
   
   
@@ -224,6 +245,83 @@ import React, {
   
   
     // ==================================================
+    // LOAD COMMUNITY RATING
+    // ==================================================
+
+    useEffect(() => {
+      let active = true
+
+      async function loadRating() {
+        if (!ratingGameId) {
+          setRatingSummary({
+            average: null,
+            count: 0
+          })
+          setRatingLoading(false)
+          return
+        }
+
+        setRatingLoading(true)
+
+        try {
+          const result =
+            await getCommunityRating(
+              ratingGameId
+            )
+
+          if (!active) {
+            return
+          }
+
+          const rawAverage =
+            result?.average
+
+          const average =
+            rawAverage == null
+              ? null
+              : Number(
+                  rawAverage
+                )
+
+          setRatingSummary({
+            average:
+              average != null &&
+              Number.isFinite(
+                average
+              )
+                ? average
+                : null,
+            count:
+              Number(
+                result?.count ||
+                0
+              )
+          })
+        } catch {
+          if (active) {
+            setRatingSummary({
+              average: null,
+              count: 0
+            })
+          }
+        } finally {
+          if (active) {
+            setRatingLoading(false)
+          }
+        }
+      }
+
+      loadRating()
+
+      return () => {
+        active = false
+      }
+    }, [
+      ratingGameId
+    ])
+
+
+    // ==================================================
     // JOIN / LEAVE COMMUNITY
     // ==================================================
   
@@ -372,6 +470,20 @@ import React, {
       }, [posts])
   
   
+    const ratingAverage =
+      ratingSummary.average
+
+    const ratingCount =
+      ratingSummary.count
+
+    const roundedRating =
+      ratingAverage == null
+        ? 0
+        : Math.round(
+            ratingAverage
+          )
+
+
     if (!game) {
       return null
     }
@@ -527,6 +639,70 @@ import React, {
               </p>
   
   
+              {ratingGameId && (
+                <div
+                  className="hub-community-rating"
+                  aria-label={
+                    ratingAverage == null
+                      ? 'Community Rating: no ratings yet'
+                      : `Community Rating: ${ratingAverage.toFixed(1)} out of 5 from ${ratingCount} ${ratingCount === 1 ? 'rating' : 'ratings'}`
+                  }
+                >
+                  <span className="hub-community-rating-label">
+                    Community Rating
+                  </span>
+
+                  {ratingLoading ? (
+                    <span className="hub-community-rating-loading">
+                      Loading rating…
+                    </span>
+                  ) : ratingAverage == null ? (
+                    <span className="hub-community-rating-empty">
+                      No ratings yet
+                    </span>
+                  ) : (
+                    <>
+                      <div className="hub-community-rating-line">
+                        <div
+                          className="hub-community-rating-stars"
+                          aria-hidden="true"
+                        >
+                          {[1, 2, 3, 4, 5].map(
+                            star => (
+                              <span
+                                key={star}
+                                className={
+                                  star <= roundedRating
+                                    ? 'active'
+                                    : ''
+                                }
+                              >
+                                ★
+                              </span>
+                            )
+                          )}
+                        </div>
+
+                        <strong>
+                          {ratingAverage.toFixed(1)}
+                          <small>
+                            /5
+                          </small>
+                        </strong>
+                      </div>
+
+                      <span className="hub-community-rating-count">
+                        {ratingCount}{' '}
+                        {ratingCount === 1
+                          ? 'rating'
+                          : 'ratings'}
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
+
+
               <div className="game-hub-actions">
   
                 <button
