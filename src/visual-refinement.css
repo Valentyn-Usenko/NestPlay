@@ -2107,3 +2107,354 @@ select:focus,
     height: 14px;
   }
 }
+
+/* ==================================================
+   REFINEMENT PASS 2 — DESKTOP FINISH
+   --------------------------------------------------
+   A restrained second pass based on the populated
+   production-like preview. Visual-only overrides.
+================================================== */
+
+:root {
+  --np-page-width: 2140px;
+  --np-content-width: 960px;
+  --np-sidebar-width: 320px;
+}
+
+/* Let the NestPlay ambient field dissolve into content instead of
+   reading like a hard left-side wallpaper panel. */
+body::after {
+  left: -28px !important;
+  width: min(760px, 62vw) !important;
+  height: 430px !important;
+  opacity: 0.17 !important;
+  -webkit-mask-image:
+    linear-gradient(
+      90deg,
+      #000 0%,
+      #000 42%,
+      rgba(0, 0, 0, 0.72) 62%,
+      transparent 100%
+    );
+  mask-image:
+    linear-gradient(
+      90deg,
+      #000 0%,
+      #000 42%,
+      rgba(0, 0, 0, 0.72) 62%,
+      transparent 100%
+    );
+}
+
+/* Header should feel attached to the application shell, not like a
+   separate website navigation bar. */
+header {
+  min-height: 58px;
+  height: 58px;
+  background: rgba(8, 8, 9, 0.945) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.045);
+  box-shadow: none;
+}
+
+header::after {
+  opacity: 0.3;
+}
+
+/* Tighter desktop proportions: slightly lighter navigation footprint,
+   a stronger center feed, and a quieter contextual rail. */
+@media (min-width: 1200px) {
+  .app-root {
+    padding-top: 5rem;
+  }
+
+  .app-layout {
+    grid-template-columns: 210px minmax(0, 1fr) !important;
+    gap: clamp(1.25rem, 1.75vw, 1.8rem) !important;
+  }
+
+  .left-navigation-rail,
+  .right-sidebar {
+    top: 74px;
+  }
+
+  .left-navigation-rail,
+  .left-rail-inner {
+    max-height: calc(100vh - 88px);
+  }
+
+  .left-rail-inner {
+    padding-right: 0;
+  }
+
+  .feed-layout {
+    width: 100%;
+    grid-template-columns:
+      minmax(690px, var(--np-content-width))
+      minmax(288px, var(--np-sidebar-width)) !important;
+    gap: clamp(1.55rem, 2vw, 2.2rem) !important;
+    max-width:
+      calc(
+        var(--np-content-width) +
+        var(--np-sidebar-width) +
+        2.2rem
+      );
+  }
+}
+
+@media (min-width: 1728px) {
+  :root {
+    --np-content-width: 1000px;
+    --np-sidebar-width: 330px;
+  }
+
+  .app-layout {
+    grid-template-columns: 218px minmax(0, 1fr) !important;
+    gap: 2rem !important;
+  }
+}
+
+@media (min-width: 2200px) {
+  :root {
+    --np-content-width: 1080px;
+    --np-sidebar-width: 350px;
+  }
+
+  .app-layout {
+    grid-template-columns: 224px minmax(0, 1fr) !important;
+    gap: 2.4rem !important;
+  }
+
+  .feed-layout {
+    gap: 2.65rem !important;
+    max-width:
+      calc(
+        var(--np-content-width) +
+        var(--np-sidebar-width) +
+        2.65rem
+      );
+  }
+}
+
+/* Navigation stays recognizable but wastes less horizontal space. */
+@media (min-width: 1200px) {
+  .left-rail-inner {
+    gap: 1.15rem;
+  }
+
+  .left-rail-nav-item {
+    min-height: 40px;
+    gap: 0.66rem;
+    padding-inline: 0.56rem;
+  }
+
+  .left-rail-nav-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .left-rail-hubs {
+    padding-top: 0.82rem;
+  }
+
+  .left-rail-hub-item {
+    min-height: 42px;
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 0.6rem;
+    padding: 0.34rem 0.46rem;
+  }
+
+  .left-rail-hub-item img,
+  .left-rail-hub-fallback {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+/* Feed rhythm: content stays dominant while cards stop reading as
+   individually outlined dashboard widgets. */
+.posts {
+  gap: 0.82rem;
+}
+
+.post-card {
+  padding: 0.96rem 1rem 0.86rem;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.012),
+      transparent 34%
+    ),
+    rgba(15, 15, 17, 0.84);
+  border-color: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.post-card:hover {
+  transform: translateY(-1px);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.019),
+      transparent 36%
+    ),
+    rgba(17, 17, 20, 0.94);
+  border-color: rgba(255, 255, 255, 0.078);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
+}
+
+.post-card h3 {
+  margin-top: 0.44rem;
+  margin-bottom: 0.66rem;
+}
+
+.post-meta,
+.meta,
+.c-meta {
+  color: #958f87;
+  font-size: 0.75rem;
+}
+
+.friend-post-label {
+  color: #a49e95;
+  font-size: 0.71rem;
+}
+
+.author-link {
+  color: #f0ece6;
+}
+
+.post-game-image {
+  margin-top: 0.22rem;
+  margin-bottom: 0.72rem;
+  border-radius: 10px;
+}
+
+.post-game-hub-link {
+  background: rgba(7, 7, 9, 0.74);
+  border-color: rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(10px);
+}
+
+/* Voting stays compact but should read immediately as an interactive
+   control instead of fading into metadata. */
+.upvote-btn,
+.downvote-btn {
+  min-height: 34px;
+  padding: 0.32rem 0.62rem;
+  color: #9d968d;
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.09);
+}
+
+.upvote-btn:hover:not(:disabled),
+.downvote-btn:hover:not(:disabled) {
+  color: #f0ece6;
+  background: rgba(255, 255, 255, 0.058);
+  border-color: rgba(255, 255, 255, 0.145);
+}
+
+.upvote-btn.active {
+  color: #ffab8f;
+  background: rgba(255, 107, 61, 0.115);
+  border-color: rgba(255, 107, 61, 0.34);
+}
+
+.downvote-btn.active {
+  color: #ff9aa3;
+  background: rgba(255, 82, 99, 0.1);
+  border-color: rgba(255, 82, 99, 0.3);
+}
+
+/* Contextual right rail: still grouped, but less like a stack of
+   bordered dashboard cards. */
+.right-sidebar {
+  gap: 0.68rem;
+}
+
+.sidebar-panel,
+.online-friends-card {
+  background: rgba(14, 14, 16, 0.6);
+  border-color: rgba(255, 255, 255, 0.045);
+  border-radius: 11px;
+}
+
+.sidebar-heading,
+.online-friends-heading-row {
+  min-height: 42px;
+  padding: 0.72rem 0.8rem 0.62rem;
+  border-bottom-color: rgba(255, 255, 255, 0.032);
+}
+
+.sidebar-heading {
+  color: #aaa49b;
+}
+
+.trending-game,
+.popular-post,
+.online-friend-row {
+  border-bottom-color: rgba(255, 255, 255, 0.028);
+}
+
+.trending-game {
+  padding: 0.62rem 0.68rem;
+}
+
+.popular-post {
+  padding: 0.68rem 0.76rem;
+}
+
+.trending-game:hover,
+.trending-game-button:hover,
+.popular-post:hover,
+.online-friend-row:hover,
+.online-friend-row:focus-visible {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.trending-game-name,
+.popular-post-title {
+  color: #d3cec7;
+}
+
+.trending-game-count,
+.popular-post-meta {
+  color: #817b73;
+}
+
+.sidebar-empty,
+.online-friends-empty {
+  color: #77716a;
+}
+
+/* Make the feed controls feel like one compact toolbar without adding
+   another container around them. */
+.feed-view-tabs {
+  margin-bottom: 0.72rem;
+}
+
+.feed-controls {
+  margin-bottom: 0.82rem;
+}
+
+.feed-controls input,
+.feed-controls select {
+  background: rgba(14, 14, 16, 0.72) !important;
+  border-color: rgba(255, 255, 255, 0.075) !important;
+}
+
+/* Respect the first pass mobile/tablet composition. */
+@media (max-width: 1199px) {
+  body::after {
+    width: min(620px, 82vw) !important;
+    opacity: 0.15 !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .post-card,
+  .upvote-btn,
+  .downvote-btn {
+    transition: none !important;
+  }
+}
