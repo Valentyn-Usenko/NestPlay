@@ -3,5 +3,6 @@ import './index.css'
 import App from './App.jsx'
 import './achievements.css'
 import './online-friends.css'
+import './visual-refinement.css'
 
 createRoot(document.getElementById('root')).render(<App />)
